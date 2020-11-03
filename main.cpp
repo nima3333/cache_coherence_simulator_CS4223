@@ -7,6 +7,7 @@
 //============================================================================
 
 #include <iostream>
+#include <cmath>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -14,6 +15,7 @@
 #include <bitset>
 #include <array>
 #include <list>
+#include <unordered_set>
 
 using namespace std;
 
@@ -34,9 +36,23 @@ class Cache {
 	    associativity = asso;
 	    block_size = b_size;
 		initialize_cache(cache_size, associativity, block_size);
+		N = (int)ceil(log2(block_size/4));
+		M = (int)ceil(cache_size/(block_size*associativity));
+		printf("N = %d, M = %d", N, M);
 	}
 
 	int loadAddress(long address){
+	    //Return nb of cycles to wait
+	    //TODO: get tags
+	    int tag = 0;
+	    int index = 0;
+	    //Check if exists in cache
+	    if(cache_content[index].find(tag) != cache_content[index].end()){  //Present
+
+	    }
+	    else{ //Not present
+
+	    }
         return 0;
 	}
 	int writeAddress(long address){
@@ -45,13 +61,17 @@ class Cache {
 
   private:
 	vector<list<cache_block>> cache;
+    vector<unordered_set<int>> cache_content;
 	int cache_size;
 	int associativity;
 	int block_size;
+	int N;
+	int M;
 	int initialize_cache(int cache_size, int associativity, int block_size){
 		int nb_cache_blocs = cache_size / (block_size * associativity);
 		for(int i=0; i<nb_cache_blocs; i++){
 			cache.push_back(list<cache_block>());
+            cache_content.push_back(unordered_set<int>());
 		}
 		cache_block a;
 		a.state=1;
@@ -131,11 +151,8 @@ class BusMessage {
 
 int main() {
 	cout << "Hello World!!!" << endl; // prints !!!Hello World!!!
-	Cache cachee(1024, 2, 4);
+	Cache cachee(1024, 1, 16);
 
-	for(int i=0; i<4; i++){
-		Core myObj(i);
-	}
 	return 0;
 
 }

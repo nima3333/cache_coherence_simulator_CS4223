@@ -37,7 +37,7 @@ class Cache {
 	    block_size = b_size;
 		initialize_cache(cache_size, associativity, block_size);
 		N = (int)ceil(log2(block_size/4));
-		M = (int)ceil(cache_size/(block_size*associativity));
+		M = (int)ceil(log2(cache_size/(block_size*associativity)));
 		printf("N = %d, M = %d", N, M);
 	}
 

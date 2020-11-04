@@ -19,14 +19,16 @@
 
 using namespace std;
 
+typedef unsigned int uint;
+
 enum instruction {Load=0, Store=1, Computation=2};
-typedef pair<int, long> Operation;
+typedef pair<int, uint> Operation;
 
 typedef bitset<2> State;
 
 struct cache_block {
 	State state;
-	int tag;
+    uint tag;
 };
 
 class Cache {
@@ -41,17 +43,33 @@ class Cache {
 		printf("N = %d, M = %d", N, M);
 	}
 
-	int loadAddress(long address){
+	int loadAddress(uint address){
 	    //Return nb of cycles to wait
-	    //TODO: get tags
-	    int tag = 0;
-	    int index = 0;
+	    //TODO: check ??
+	    uint tag = address >> (N+M);
+	    uint index = (address << (32-N-M)) >> (32-M);
 	    //Check if exists in cache
 	    if(cache_content[index].find(tag) != cache_content[index].end()){  //Present
-
+            //TODO: state ?
 	    }
 	    else{ //Not present
+            if(cache_content[index].size() < associativity){ //Cache is not full
 
+            }
+            else{  //Cache is full
+                //TODO: cache coherence
+                //Delete front one
+                cache_block to_remove = cache[index].front();
+                cache[index].pop_front();
+                cache_content[index].erase(to_remove.tag);
+
+                //Insertion
+                cache_content[index].insert(tag);
+                cache_block to_add;
+                to_add.tag = tag;
+                to_add.state = 0;
+                cache[index].push_back(to_add);
+            }
 	    }
         return 0;
 	}
@@ -61,17 +79,18 @@ class Cache {
 
   private:
 	vector<list<cache_block>> cache;
-    vector<unordered_set<int>> cache_content;
+    vector<unordered_set<uint>> cache_content;
 	int cache_size;
 	int associativity;
 	int block_size;
 	int N;
 	int M;
+    int nb_cache_blocs;
 	int initialize_cache(int cache_size, int associativity, int block_size){
-		int nb_cache_blocs = cache_size / (block_size * associativity);
+	    nb_cache_blocs = cache_size / (block_size * associativity);
 		for(int i=0; i<nb_cache_blocs; i++){
 			cache.push_back(list<cache_block>());
-            cache_content.push_back(unordered_set<int>());
+            cache_content.push_back(unordered_set<uint>());
 		}
 		cache_block a;
 		a.state=1;
@@ -139,14 +158,37 @@ class Core {
 
 };
 
+enum BusMessage {
+    Void = 0,
+    BusRd = 1,
+    BudRdX = 2,
+    FlushOpt = 3,
+    BusUpgr = 4,
+    Flush = 5
+};
 
 class Bus {
+    public:
+        bool isBusBusy(){
+            return busy;
+        }
 
+        void setBusMessage(BusMessage update_message){
+            message = update_message;
+        }
+
+        BusMessage getBusMessage(){
+            return message;
+        }
+
+        void clearBus(){
+            message = Void;
+        }
+    private:
+        bool busy{0};
+        BusMessage message{Void};
 };
 
-class BusMessage {
-
-};
 
 
 int main() {

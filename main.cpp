@@ -13,9 +13,9 @@
 #include <vector>
 #include <queue>
 #include <bitset>
-#include <array>
 #include <list>
 #include <unordered_set>
+#include "Bus.h"
 
 using namespace std;
 
@@ -158,43 +158,13 @@ class Core {
 
 };
 
-enum BusMessage {
-    Void = 0,
-    BusRd = 1,
-    BudRdX = 2,
-    FlushOpt = 3,
-    BusUpgr = 4,
-    Flush = 5
-};
-
-class Bus {
-    public:
-        bool isBusBusy(){
-            return busy;
-        }
-
-        void setBusMessage(BusMessage update_message){
-            message = update_message;
-        }
-
-        BusMessage getBusMessage(){
-            return message;
-        }
-
-        void clearBus(){
-            message = Void;
-        }
-    private:
-        bool busy{0};
-        BusMessage message{Void};
-};
-
 
 
 int main() {
 	cout << "Hello World!!!" << endl; // prints !!!Hello World!!!
 	Cache cachee(1024, 1, 16);
-
+    Bus a = Bus();
+    BusMessage b = BusMessage();
 	return 0;
 
 }

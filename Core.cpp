@@ -54,28 +54,32 @@ int Core::next_cycle() {
 
         switch(current_instruction){
             case 0:
-
+                prRd(current_address);
                 break;
             case 1:
-
+                prWr(current_address);
                 break;
             case 2:
                 this->cycles_to_wait += current_address;
+                this->blocked = true;
                 break;
         }
 
     }
     else{
-
+        this->cycles_to_wait --;
+        this->blocked = (this->cycles_to_wait != 0);
     }
 
     return 0;
 }
 
 int Core::prRd(uint address) {
+    this->l1_cache.loadAddress(address);
     return 0;
 }
 
 int Core::prWr(uint address) {
+    this->l1_cache.writeAddress(address);
     return 0;
 }

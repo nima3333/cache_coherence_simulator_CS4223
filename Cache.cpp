@@ -10,25 +10,29 @@ Cache::Cache(int c_size, int asso, int b_size)
     this->associativity = asso;
     this->block_size = b_size;
     initialize_cache(cache_size, associativity, block_size);
-    N = (int)ceil(log2(block_size/4));
-    M = (int)ceil(log2(cache_size/(block_size*associativity)));
+    this->N = (int)ceil(log2(block_size/4));
+    this->M = (int)ceil(log2(cache_size/(block_size*associativity)));
     printf("N = %d, M = %d", N, M);
 }
 
 int Cache::loadAddress(uint address) {
-    //TODO: check ??
+    //Tested with one value
     uint tag = address >> (N+M);
     uint index = (address << (32-N-M)) >> (32-M);
+
     //Check if exists in cache
     if(cache_content[index].find(tag) != cache_content[index].end()){  //Present
-        //TODO: state ?
+        //Cache hit ? Check state
+        cache_block hit = cache[index];
+        //TODO: check state
     }
     else{ //Not present
+        //TODO: bus transaction
         if(cache_content[index].size() < associativity){ //Cache is not full
-
+        //TODO: just add in cache
         }
         else{  //Cache is full
-            //TODO: cache coherence
+            //TODO: LRU replacement
             //Delete front one
             cache_block to_remove = cache[index].front();
             cache[index].pop_front();

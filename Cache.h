@@ -42,8 +42,8 @@ private:
     int cache_size;
     int associativity;
     int block_size;
-    int N;
-    int M;
+    uint N;
+    uint M;
     int nb_cache_blocs;
     int initialize_cache(int cache_size, int associativity, int block_size);
 };

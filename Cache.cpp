@@ -4,11 +4,12 @@
 
 #include "Cache.h"
 
-Cache::Cache(int c_size, int asso, int b_size)
+Cache::Cache(int c_size, int asso, int b_size, Bus main_bus)
 {
     this->cache_size = c_size;
     this->associativity = asso;
     this->block_size = b_size;
+    this->main_bus = main_bus;
     initialize_cache(cache_size, associativity, block_size);
     this->N = (int)ceil(log2(block_size/4));
     this->M = (int)ceil(log2(cache_size/(block_size*associativity)));
@@ -23,8 +24,27 @@ int Cache::loadAddress(uint address) {
     //Check if exists in cache
     if(cache_content[index].find(tag) != cache_content[index].end()){  //Present
         //Cache hit ? Check state
-        cache_block hit = cache[index];
-        //TODO: check state
+
+        //Get cache block
+        bool found = false;
+        cache_block hit;
+        for (list<cache_block>::iterator it=cache[index].begin(); it != cache[index].end(); ++it){
+            uint iter_tag = it->tag;
+            if(iter_tag == tag){
+                hit = *it;
+                found = true;
+            }
+        }
+        //TODO: to put in a function
+        if(!found) throw "problem";
+
+        //Check state
+        if(hit.state == 0){  //Invalid block, will have to get it
+            //TODO: get it, factorize
+        }
+        else{  //Cache Hit
+            //TODO: cache hits
+        }
     }
     else{ //Not present
         //TODO: bus transaction

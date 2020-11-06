@@ -30,10 +30,9 @@ struct cache_block {
     uint tag{};
 };
 
-
 class Cache {
 public:
-    Cache(int c_size, int asso, int b_size, Bus main_bus);
+    Cache(int c_size, int asso, int b_size, Bus main_bus, int attached_core);
     int loadAddress(uint address);
     int writeAddress(uint address);
     int snoopBus();
@@ -48,7 +47,8 @@ private:
     uint M;
     int nb_cache_blocs;
     int initialize_cache(int cache_size, int associativity, int block_size);
-    Bus main_bus{Bus()};
+    Bus main_bus;
+    int attached_core;
 };
 
 #endif //MULTICORE_CACHE_H

@@ -51,7 +51,7 @@ int Core::next_cycle() {
 
         int current_instruction = current_operation.first;
         uint current_address = current_operation.second;
-
+        this->blocked = true;
         switch(current_instruction){
             case 0:
                 prRd(current_address);
@@ -61,7 +61,6 @@ int Core::next_cycle() {
                 break;
             case 2:
                 this->cycles_to_wait += current_address;
-                this->blocked = true;
                 break;
         }
 
@@ -75,7 +74,8 @@ int Core::next_cycle() {
 }
 
 int Core::prRd(uint address) {
-    this->l1_cache.loadAddress(address);
+    int cache_waiting_cycles = this->l1_cache.loadAddress(address);
+    this->cycles_to_wait += cache_waiting_cycles;
     return 0;
 }
 

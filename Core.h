@@ -36,7 +36,8 @@ private:
     int cycles_to_wait{0};
     bool work_done{0};
     Bus main_bus{Bus()};
-    Cache l1_cache{Cache(1024, 2, 16, main_bus)};
+    //TODO: check that
+    Cache l1_cache{Cache(1024, 2, 16, main_bus, this->core_number)};
     queue<Operation> instruction_buffer;
 };
 

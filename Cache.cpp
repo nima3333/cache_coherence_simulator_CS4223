@@ -4,12 +4,13 @@
 
 #include "Cache.h"
 
-Cache::Cache(int c_size, int asso, int b_size, Bus main_bus)
+Cache::Cache(int c_size, int asso, int b_size, Bus main_bus, int attached_core)
 {
     this->cache_size = c_size;
     this->associativity = asso;
     this->block_size = b_size;
     this->main_bus = main_bus;
+    this->attached_core = attached_core;
     initialize_cache(cache_size, associativity, block_size);
     this->N = (int)ceil(log2(block_size/4));
     this->M = (int)ceil(log2(cache_size/(block_size*associativity)));
@@ -43,11 +44,22 @@ int Cache::loadAddress(uint address) {
             //TODO: get it, factorize
         }
         else{  //Cache Hit
-            //TODO: cache hits
+            //TODO: cache hits : check if work
+            //Number of cycles to wait TODO: define it in a file
+            return 1;
         }
     }
     else{ //Not present
         //TODO: bus transaction
+        //Bus transaction
+        if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
+            //TODO: handle error (-1) in Core
+            return -1;
+        }
+        BusMessage transaction = BusMessage(BusRd, this->attached_core);
+        main_bus.setMessage(transaction);
+
+        //TODO: put this elsewhere, after every core reported for the transaction
         if(cache_content[index].size() < associativity){ //Cache is not full
         //TODO: just add in cache
         }

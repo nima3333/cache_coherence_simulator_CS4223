@@ -29,12 +29,12 @@ struct cache_block {
 };
 
 
-
 class Cache {
 public:
     Cache(int c_size, int asso, int b_size);
     int loadAddress(uint address);
-    int writeAddress(long address);
+    int writeAddress(uint address);
+    int snoopBus();
 
 private:
     vector<list<cache_block>> cache;

@@ -4,7 +4,8 @@
 
 #include "Cache.h"
 
-Cache::Cache(int c_size, int asso, int b_size) {
+Cache::Cache(int c_size, int asso, int b_size)
+{
     this->cache_size = c_size;
     this->associativity = asso;
     this->block_size = b_size;
@@ -44,7 +45,7 @@ int Cache::loadAddress(uint address) {
     return 0;
 }
 
-int Cache::writeAddress(long address) {
+int Cache::writeAddress(uint address) {
     return 0;
 }
 
@@ -58,5 +59,9 @@ int Cache::initialize_cache(int cache_size, int associativity, int block_size) {
     a.state=1;
     a.tag=4;
     cache[1].push_back(a);
+    return 0;
+}
+
+int Cache::snoopBus() {
     return 0;
 }

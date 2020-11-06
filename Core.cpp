@@ -3,15 +3,13 @@
 //
 
 #include "Core.h"
-#include <iostream>
-#include <fstream>
 
 
-Core::Core(int core_id) {
+Core::Core(int core_id, Bus main_bus) {
     //TODO: logic to handle failure
+    this->main_bus = main_bus;
     this->core_number = core_id;
     fill_instruction_buffer();
-    Cache cachee(1024, 2, 4);
 }
 
 int Core::fill_instruction_buffer() {
@@ -47,5 +45,37 @@ int Core::fill_instruction_buffer() {
 }
 
 int Core::next_cycle() {
+    if(!blocked){
+        Operation current_operation = instruction_buffer.front();
+        instruction_buffer.pop();
+
+        int current_instruction = current_operation.first;
+        uint current_address = current_operation.second;
+
+        switch(current_instruction){
+            case 0:
+
+                break;
+            case 1:
+
+                break;
+            case 2:
+                this->cycles_to_wait += current_address;
+                break;
+        }
+
+    }
+    else{
+
+    }
+
+    return 0;
+}
+
+int Core::prRd(uint address) {
+    return 0;
+}
+
+int Core::prWr(uint address) {
     return 0;
 }

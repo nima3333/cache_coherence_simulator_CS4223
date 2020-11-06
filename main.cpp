@@ -17,10 +17,9 @@ using namespace std;
 
 int main() {
 	cout << "Hello World!!!" << endl; // prints !!!Hello World!!!
-	Cache cachee(1024, 2, 16);
     Bus a = Bus();
     BusMessage b = BusMessage();
-    Core c = Core(1);
-	return 0;
+    Core c = Core(1, a);
+    return 0;
 
 }

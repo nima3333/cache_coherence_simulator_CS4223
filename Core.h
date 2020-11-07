@@ -37,8 +37,9 @@ private:
     int cycles_to_wait{0};
     bool work_done{0};
     Bus main_bus{Bus()};
+    Bus response_bus{Bus()};
     //FIXME: check that, core number not properly passed
-    Cache l1_cache{Cache(1024, 2, 16, main_bus, this->core_number)};
+    Cache l1_cache{Cache(1024, 2, 16, main_bus, response_bus, this->core_number)};
     queue<Operation> instruction_buffer;
 };
 

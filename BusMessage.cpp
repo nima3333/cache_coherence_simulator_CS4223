@@ -13,3 +13,9 @@ BusMessage::BusMessage() {
     this->type = Void;
     this->senderId = -1;
 }
+
+BusMessage::BusMessage(MessageType type, int senderid, uint address) {
+    this->type = type;
+    this->senderId = senderid;
+    this->address = 0;
+}

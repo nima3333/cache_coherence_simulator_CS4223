@@ -6,6 +6,7 @@
 #define MULTICORE_CACHE_H
 
 #include "Bus.h"
+#include "CacheBlock.h"
 #include <cmath>
 #include <fstream>
 #include <string>
@@ -25,20 +26,16 @@ enum instruction {Load=0, Store=1, Computation=2};
 typedef pair<int, uint> Operation;
 typedef bitset<2> State;
 
-struct cache_block {
-    State state;
-    uint tag{};
-};
-
 class Cache {
 public:
-    Cache(int c_size, int asso, int b_size, Bus main_bus, int attached_core);
+    //FIXME: passed by ref
+    Cache(int c_size, int asso, int b_size, Bus main_bus, Bus reponse_bus, int attached_core);
     int loadAddress(uint address);
     int writeAddress(uint address);
     int snoopBus(uint address);
 
 private:
-    vector<list<cache_block>> cache;
+    vector<list<CacheBlock>> cache;
     vector<unordered_set<uint>> cache_content;
     int cache_size;
     int associativity;
@@ -48,7 +45,15 @@ private:
     int nb_cache_blocs;
     int initialize_cache(int cache_size, int associativity, int block_size);
     Bus main_bus;
+    Bus response_bus;
+
     int attached_core;
+
+    int isInCache(uint address);
+
+    int getCacheBlockTag(uint address);
+
+    int putLastUsed(uint address);
 };
 
 #endif //MULTICORE_CACHE_H

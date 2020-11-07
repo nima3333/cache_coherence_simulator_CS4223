@@ -5,6 +5,8 @@
 #ifndef MULTICORE_BUSMESSAGE_H
 #define MULTICORE_BUSMESSAGE_H
 
+typedef unsigned int uint;
+
 enum MessageType {
     Void = 0,
     BusRd = 1,
@@ -17,12 +19,13 @@ enum MessageType {
 class BusMessage {
 public:
     BusMessage(MessageType type, int senderid);
+    BusMessage(MessageType type, int senderid, uint address);
 
     BusMessage();
 
     int senderId{};
-private:
     MessageType type{Void};
+    uint address{0};
 };
 
 

@@ -83,3 +83,9 @@ int Core::prWr(uint address) {
     this->l1_cache.writeAddress(address);
     return 0;
 }
+
+int Core::cacheSnoop(uint address) {
+    int return_value = l1_cache.snoopBus(address);
+    //TODO: some logic here to get nb of cycle to wait
+    return 0;
+}

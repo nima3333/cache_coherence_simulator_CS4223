@@ -20,9 +20,9 @@ public:
 
     BusMessage();
 
+    int senderId{};
 private:
     MessageType type{Void};
-    int senderId{};
 };
 
 

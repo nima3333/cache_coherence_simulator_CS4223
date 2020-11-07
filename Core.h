@@ -25,6 +25,7 @@ public:
     int next_cycle();
     int prRd(uint address);
     int prWr(uint address);
+    int cacheSnoop(uint address);
 
 private:
     int core_number;  //To load the correct file
@@ -36,7 +37,7 @@ private:
     int cycles_to_wait{0};
     bool work_done{0};
     Bus main_bus{Bus()};
-    //TODO: check that
+    //FIXME: check that, core number not properly passed
     Cache l1_cache{Cache(1024, 2, 16, main_bus, this->core_number)};
     queue<Operation> instruction_buffer;
 };

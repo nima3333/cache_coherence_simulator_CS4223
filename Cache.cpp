@@ -50,7 +50,6 @@ int Cache::loadAddress(uint address) {
         }
     }
     else{ //Not present
-        //TODO: bus transaction
         //Bus transaction
         if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
             //TODO: handle error (-1) in Core
@@ -58,28 +57,24 @@ int Cache::loadAddress(uint address) {
         }
         BusMessage transaction = BusMessage(BusRd, this->attached_core);
         main_bus.setMessage(transaction);
-
-        //TODO: put this elsewhere, after every core reported for the transaction
-        if(cache_content[index].size() < associativity){ //Cache is not full
-        //TODO: just add in cache
-        }
-        else{  //Cache is full
-            //TODO: LRU replacement
-            //Delete front one
-            cache_block to_remove = cache[index].front();
-            cache[index].pop_front();
-            cache_content[index].erase(to_remove.tag);
-
-            //Insertion
-            cache_content[index].insert(tag);
-            cache_block to_add;
-            to_add.tag = tag;
-            to_add.state = 0;
-            cache[index].push_back(to_add);
-        }
+        //FIXME: -2 is "waiting for snoop result"
+        return -2;
     }
     return 0;
 }
+
+int Cache::snoopBus(uint address) {
+    BusMessage on_bus = main_bus.getMessage();
+    if(on_bus.senderId == attached_core){  //it's his own message, no reaction
+
+    }
+    else{  // Take into account the message
+        //TODO: Need to take into account the message
+    }
+
+    return 0;
+}
+
 
 int Cache::writeAddress(uint address) {
     return 0;
@@ -98,6 +93,26 @@ int Cache::initialize_cache(int cache_size, int associativity, int block_size) {
     return 0;
 }
 
-int Cache::snoopBus() {
+/*
+int Cache::snoopreact(){
+    //TODO: put this elsewhere, after every core reported for the transaction
+    if(cache_content[index].size() < associativity){ //Cache is not full
+        //TODO: just add in cache
+    }
+    else{  //Cache is full
+        //TODO: LRU replacement
+        //Delete front one
+        cache_block to_remove = cache[index].front();
+        cache[index].pop_front();
+        cache_content[index].erase(to_remove.tag);
+
+        //Insertion
+        cache_content[index].insert(tag);
+        cache_block to_add;
+        to_add.tag = tag;
+        to_add.state = 0;
+        cache[index].push_back(to_add);
+    }
     return 0;
 }
+ */

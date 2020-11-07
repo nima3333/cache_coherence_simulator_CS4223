@@ -35,7 +35,7 @@ public:
     Cache(int c_size, int asso, int b_size, Bus main_bus, int attached_core);
     int loadAddress(uint address);
     int writeAddress(uint address);
-    int snoopBus();
+    int snoopBus(uint address);
 
 private:
     vector<list<cache_block>> cache;

@@ -19,7 +19,7 @@ int main() {
 	cout << "Hello World!!!" << endl; // prints !!!Hello World!!!
     Bus a = Bus();
     BusMessage b = BusMessage();
-    Core c = Core(1, a);
+    Core c = Core(0, a);
 
     uint M = 5;
     uint N = 2;
@@ -28,5 +28,7 @@ int main() {
     uint index = (address << (32-N-M)) >> (32-M);
     cout << dec << (N+M) << " " << hex << tag << " " << index;
     return 0;
+
+
 
 }

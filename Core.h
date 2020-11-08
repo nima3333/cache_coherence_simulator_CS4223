@@ -30,7 +30,7 @@ public:
 
 private:
     int core_number;  //To load the correct file
-    string program{"bodytrack"};
+    string program{"test"};
     int store_counter{0}; //Store the number of stores
     int load_counter{0};
     int computing_counter{0};

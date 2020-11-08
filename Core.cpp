@@ -5,10 +5,13 @@
 #include "Core.h"
 
 
-Core::Core(int core_id, Bus &main_bus) {
-    //TODO: logic to handle failure
+Core::Core(int core_id, Bus &main_bus, Bus &resp_bus)
+:l1_cache(Cache(1024, 2, 16, main_bus, resp_bus, core_id))
+{
     this->main_bus = main_bus;
+    this->response_bus = resp_bus;
     this->core_number = core_id;
+
     fill_instruction_buffer();
 }
 
@@ -45,6 +48,9 @@ int Core::fill_instruction_buffer() {
 }
 
 int Core::next_cycle() {
+    if(instruction_buffer.empty() && !blocked){
+        return 1;
+    }
     if(!blocked){
         Operation current_operation = instruction_buffer.front();
 
@@ -85,9 +91,11 @@ int Core::prRd(uint address) {
     else if(cache_waiting_cycles == -2){
         //Snooping of response required to determine next state
         this->snoopingPhaseRequired = true;
+        return 0;
     }
     else{
         this->cycles_to_wait += cache_waiting_cycles;
+        return 1;
     }
     return 0;
 }
@@ -114,5 +122,6 @@ int Core::cacheSnoopResponse() {
     int return_value = l1_cache.snoopResponseBus(current_instruction, current_address);
     this->cycles_to_wait += return_value;
     this->snoopingPhaseRequired=false;
+    instruction_buffer.pop();
     return 1;
 }

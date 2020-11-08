@@ -20,7 +20,7 @@ typedef pair<int, uint> Operation;
 
 class Core {
 public:
-    Core(int core_id, Bus &main_bus);
+    Core(int core_id, Bus &main_bus, Bus &resp_bus);
     int fill_instruction_buffer();
     int next_cycle();
     int prRd(uint address);
@@ -37,9 +37,9 @@ private:
     bool blocked{0};
     int cycles_to_wait{0};
     bool work_done{0};
-    Bus main_bus{Bus()};
-    Bus response_bus{Bus()};
-    Cache l1_cache{Cache(1024, 2, 16, main_bus, response_bus, this->core_number)};
+    Bus main_bus;
+    Bus response_bus;
+    Cache l1_cache;
     queue<Operation> instruction_buffer;
     bool snoopingPhaseRequired{false};
 

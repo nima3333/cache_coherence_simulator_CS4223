@@ -58,6 +58,7 @@ private:
 
     int changeCacheBlockState(uint address, State state);
 
+    int addBlock(uint address, State state);
 };
 
 #endif //MULTICORE_CACHE_H

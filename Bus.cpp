@@ -5,7 +5,7 @@
 #include "Bus.h"
 
 bool Bus::isEmpty() {
-    return false;
+    return this->message.type==Void;
 }
 
 void Bus::setMessage(BusMessage message) {
@@ -17,7 +17,7 @@ BusMessage Bus::getMessage() {
 }
 
 void Bus::clearBus() {
-
+    this->message = BusMessage();
 }
 
 Bus::Bus() {

@@ -51,7 +51,7 @@ int Cache::loadAddress(uint address) {
             }
         }
         //TODO: to put in a function
-        if(!found) throw "problem";
+        if(!found) throw invalid_argument("load addr pb 1");
 
         //Check state
         if(hit.state == 0){  //Invalid block, will have to get it
@@ -174,7 +174,7 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address){
     }
     else{
         //Something's wrong
-        throw "problem";
+        throw invalid_argument("load addr pb 2");
         return 0;
     }
 }
@@ -227,7 +227,7 @@ int Cache::putLastUsed(uint address){
             found = true;
         }
     }
-    if(!found) throw "Problem";
+    if(!found) throw invalid_argument("load addr pb 3");
 
     //Delete
     cache[index].remove(hit);
@@ -235,6 +235,16 @@ int Cache::putLastUsed(uint address){
     //Re-Insertion
     cache[index].push_back(hit);
 
+    return 0;
+}
+
+int Cache::addBlock(uint address, State state){
+    uint tag = address >> (N+M);
+    uint index = (address << (32-N-M)) >> (32-M);
+    if(cache.size()==associativity){
+        cache[index].pop_front();
+    }
+    cache[index].emplace_back(state, tag);
     return 0;
 }
 
@@ -251,8 +261,12 @@ int Cache::changeCacheBlockState(uint address, State state){
             found = true;
         }
     }
-    if(!found) throw "Problem";
-    hit.changeState(state);
+    if(!found){
+        addBlock(address, state);
+    }
+    else{
+        hit.changeState(state);
+    }
     return 0;
 
 }

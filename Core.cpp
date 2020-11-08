@@ -5,7 +5,7 @@
 #include "Core.h"
 
 
-Core::Core(int core_id, Bus main_bus) {
+Core::Core(int core_id, Bus &main_bus) {
     //TODO: logic to handle failure
     this->main_bus = main_bus;
     this->core_number = core_id;

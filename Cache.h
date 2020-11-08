@@ -28,8 +28,7 @@ typedef bitset<2> State;
 
 class Cache {
 public:
-    //FIXME: passed by ref
-    Cache(int c_size, int asso, int b_size, Bus main_bus, Bus reponse_bus, int attached_core);
+    Cache(int c_size, int asso, int b_size, Bus &main_bus, Bus &reponse_bus, int attached_core);
     int loadAddress(uint address);
     int writeAddress(uint address);
     int snoopMainBus();

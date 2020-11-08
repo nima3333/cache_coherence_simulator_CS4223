@@ -4,7 +4,7 @@
 
 #include "Cache.h"
 
-Cache::Cache(int cache_size, int associativity, int block_size, Bus main_bus, Bus response_bus, int attached_core)
+Cache::Cache(int cache_size, int associativity, int block_size, Bus &main_bus, Bus &response_bus, int attached_core)
 {
     this->cache_size = cache_size;
     this->associativity = associativity;

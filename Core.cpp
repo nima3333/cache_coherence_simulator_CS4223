@@ -75,7 +75,15 @@ int Core::next_cycle() {
 
 int Core::prRd(uint address) {
     int cache_waiting_cycles = this->l1_cache.loadAddress(address);
-    this->cycles_to_wait += cache_waiting_cycles;
+    if(cache_waiting_cycles == -1){
+        //Retry later
+    }
+    else if(cache_waiting_cycles == -2){
+        //Snooping required to determine next state
+    }
+    else{
+        this->cycles_to_wait += cache_waiting_cycles;
+    }
     return 0;
 }
 
@@ -85,7 +93,7 @@ int Core::prWr(uint address) {
 }
 
 int Core::cacheSnoop(uint address) {
-    int return_value = l1_cache.snoopBus(address);
+    int return_value = l1_cache.snoopMainBus(address);
     //TODO: some logic here to get nb of cycle to wait
     return 0;
 }

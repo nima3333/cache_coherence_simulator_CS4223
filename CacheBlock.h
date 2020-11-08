@@ -18,6 +18,7 @@ typedef unsigned int uint;
 - 2 : Shared
 - 3 : Modified
  */
+
 class CacheBlock {
 public:
     CacheBlock();
@@ -26,7 +27,7 @@ public:
     uint tag{};
     bool operator == (const CacheBlock& s) const { return state == s.state && tag == s.tag; }
     bool operator != (const CacheBlock& s) const { return !operator==(s); }
-
+    void changeState(State new_state);
 };
 
 

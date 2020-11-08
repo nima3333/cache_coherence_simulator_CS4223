@@ -32,7 +32,7 @@ public:
     Cache(int c_size, int asso, int b_size, Bus main_bus, Bus reponse_bus, int attached_core);
     int loadAddress(uint address);
     int writeAddress(uint address);
-    int snoopBus(uint address);
+    int snoopMainBus(uint address);
 
 private:
     vector<list<CacheBlock>> cache;
@@ -54,6 +54,10 @@ private:
     int getCacheBlockTag(uint address);
 
     int putLastUsed(uint address);
+
+    int snoopResponseBus();
+
+    int changeCacheBlockState(uint address, State state);
 };
 
 #endif //MULTICORE_CACHE_H

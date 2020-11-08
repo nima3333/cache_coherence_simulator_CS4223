@@ -38,7 +38,7 @@ private:
     bool work_done{0};
     Bus main_bus{Bus()};
     Bus response_bus{Bus()};
-    //FIXME: check that, core number not properly passed
+    //FIXME: check that, nothing properly passed
     Cache l1_cache{Cache(1024, 2, 16, main_bus, response_bus, this->core_number)};
     queue<Operation> instruction_buffer;
 };

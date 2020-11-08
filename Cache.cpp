@@ -30,10 +30,12 @@ int Cache::loadAddress(uint address) {
         //Get cache block
         bool found = false;
         CacheBlock hit;
-        for (list<CacheBlock>::iterator it=cache[index].begin(); it != cache[index].end(); ++it){
-            uint iter_tag = it->tag;
+        //TO_TEST
+        //for (list<CacheBlock>::iterator it=cache[index].begin(); it != cache[index].end(); ++it){
+        for (auto & it : cache[index]){
+            uint iter_tag = it.tag;
             if(iter_tag == tag){
-                hit = *it;
+                hit = it;
                 found = true;
             }
         }
@@ -43,6 +45,13 @@ int Cache::loadAddress(uint address) {
         //Check state
         if(hit.state == 0){  //Invalid block, will have to get it
             //TODO: get it, factorize
+            //Bus transaction
+            if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
+                //TODO: handle error (-1) in Core
+                return -1;
+            }
+            BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
+            main_bus.setMessage(transaction);
 
         }
         else{  //Cache Hit
@@ -58,7 +67,7 @@ int Cache::loadAddress(uint address) {
             //TODO: handle error (-1) in Core
             return -1;
         }
-        BusMessage transaction = BusMessage(BusRd, this->attached_core);
+        BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
         main_bus.setMessage(transaction);
         //FIXME: -2 is "waiting for snoop result"
         return -2;
@@ -66,7 +75,7 @@ int Cache::loadAddress(uint address) {
     return 0;
 }
 
-int Cache::snoopBus(uint address) {
+int Cache::snoopMainBus(uint address) {
     BusMessage on_bus = main_bus.getMessage();
     if(on_bus.senderId == attached_core){  //it's his own message, no reaction
         return 0;
@@ -85,26 +94,44 @@ int Cache::snoopBus(uint address) {
                 case 1: //If cache in Exclusive
                     if(message_type==BusRd){
                         BusMessage response = BusMessage(FlushOpt, attached_core, on_bus.address);
-                        response_bus.setMessage(response);
+                        if(response_bus.isEmpty()){
+                            response_bus.setMessage(response);
+                        }
+                        changeCacheBlockState(address, 2); //Transition to Shared
                     }
                     else if(message_type==BudRdX){
-
+                        BusMessage response = BusMessage(FlushOpt, attached_core, on_bus.address);
+                        if(response_bus.isEmpty()){
+                            response_bus.setMessage(response);
+                        }
+                        changeCacheBlockState(address, 0); //Transition to Invalid
                     }
                     break;
                 case 2: //If cache in Shared
                     if(message_type==BusRd){
-
+                        BusMessage response = BusMessage(FlushOpt, attached_core, on_bus.address);
+                        if(response_bus.isEmpty()){
+                            response_bus.setMessage(response);
+                        }
                     }
                     else if(message_type==BudRdX){
-
+                        BusMessage response = BusMessage(FlushOpt, attached_core, on_bus.address);
+                        if(response_bus.isEmpty()){
+                            response_bus.setMessage(response);
+                        }
+                        changeCacheBlockState(address, 0); //Transition to Invalid
                     }
                     break;
                 case 3: //If cache in Modified
                     if(message_type==BusRd){
-
+                        BusMessage response = BusMessage(FlushOpt, attached_core, on_bus.address);
+                        response_bus.setMessageIfEmpty(response);
+                        changeCacheBlockState(address, 2); //Transition to Shared
                     }
                     else if(message_type==BudRdX){
-
+                        BusMessage response = BusMessage(FlushOpt, attached_core, on_bus.address);
+                        response_bus.setMessageIfEmpty(response);
+                        changeCacheBlockState(address, 0); //Transition to Invalid
                     }
                     break;
             }
@@ -117,6 +144,15 @@ int Cache::snoopBus(uint address) {
     return 0;
 }
 
+int Cache::snoopResponseBus(){
+    if(response_bus.isEmpty()){
+        //Do something
+    }
+    else{
+        BusMessage response = response_bus.getMessage();
+    }
+    return 0;
+}
 
 int Cache::writeAddress(uint address) {
     return 0;
@@ -177,9 +213,9 @@ int Cache::putLastUsed(uint address){
             found = true;
         }
     }
+    if(!found) throw "Problem";
 
     //Delete
-    //FIXME: does not work
     cache[index].remove(hit);
 
     //Re-Insertion
@@ -188,9 +224,26 @@ int Cache::putLastUsed(uint address){
     return 0;
 }
 
+int Cache::changeCacheBlockState(uint address, State state){
+    uint tag = address >> (N+M);
+    uint index = (address << (32-N-M)) >> (32-M);
+    //Find corresponding cache block
+    bool found = false;
+    CacheBlock hit;
+    for (list<CacheBlock>::iterator it=cache[index].begin(); it != cache[index].end(); ++it){
+        uint iter_tag = it->tag;
+        if(iter_tag == tag){
+            hit = *it;
+            found = true;
+        }
+    }
+    if(!found) throw "Problem";
+    hit.changeState(state);
+    return 0;
+
+}
 /*
-int Cache::snoopreact(){
-    //TODO: put this elsewhere, after every core reported for the transaction
+ * //TODO: put this elsewhere, after every core reported for the transaction
     if(cache_content[index].size() < associativity){ //Cache is not full
         //TODO: just add in cache
     }
@@ -208,6 +261,4 @@ int Cache::snoopreact(){
         to_add.state = 0;
         cache[index].push_back(to_add);
     }
-    return 0;
-}
  */

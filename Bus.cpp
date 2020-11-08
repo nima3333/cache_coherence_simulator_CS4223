@@ -22,3 +22,9 @@ void Bus::clearBus() {
 
 Bus::Bus() {
 }
+
+void Bus::setMessageIfEmpty(BusMessage message) {
+    if(isEmpty()){
+        this->message = message;
+    }
+}

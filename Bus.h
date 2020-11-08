@@ -12,6 +12,7 @@ public:
     Bus();
     bool isEmpty();
     void setMessage(BusMessage message);
+    void setMessageIfEmpty(BusMessage message);
     BusMessage getMessage();
     void clearBus();
 

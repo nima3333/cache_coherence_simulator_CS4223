@@ -10,7 +10,7 @@ typedef unsigned int uint;
 enum MessageType {
     Void = 0,
     BusRd = 1,
-    BudRdX = 2,
+    BusRdX = 2,
     FlushOpt = 3,
     BusUpgr = 4,
     Flush = 5

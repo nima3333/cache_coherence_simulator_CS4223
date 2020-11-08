@@ -18,6 +18,17 @@ Cache::Cache(int cache_size, int associativity, int block_size, Bus main_bus, Bu
     printf("N = %d, M = %d", N, M);
 }
 
+int Cache::initialize_cache(int cache_size, int associativity, int block_size) {
+    nb_cache_blocs = cache_size / (block_size * associativity);
+    for(int i=0; i<nb_cache_blocs; i++){
+        cache.emplace_back();
+        cache_content.emplace_back();
+    }
+    CacheBlock a = CacheBlock(1, 4);
+    cache[1].push_back(a);
+    return 0;
+}
+
 int Cache::loadAddress(uint address) {
     //Tested with one value
     uint tag = address >> (N+M);
@@ -75,97 +86,100 @@ int Cache::loadAddress(uint address) {
     return 0;
 }
 
-int Cache::snoopMainBus(uint address) {
+int Cache::snoopMainBus() {
     BusMessage on_bus = main_bus.getMessage();
     if(on_bus.senderId == attached_core){  //it's his own message, no reaction
         return 0;
     }
     else{  // Take into account the message
-        //TODO: Need to take into account the message
         MessageType message_type = on_bus.type;
+        uint address = on_bus.address;
         //Check if address is in cache
-        int inCache = isInCache(on_bus.address);
+        int inCache = isInCache(address);
         if(inCache){
             //Get state
-            int state = getCacheBlockTag(on_bus.address);
+            int state = getCacheBlockTag(address);
             switch (state) {
                 case 0: //If cache is invalid, do nothing
                     return 0;
                 case 1: //If cache in Exclusive
                     if(message_type==BusRd){
-                        BusMessage response = BusMessage(FlushOpt, attached_core, on_bus.address);
-                        if(response_bus.isEmpty()){
-                            response_bus.setMessage(response);
-                        }
+                        BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                        response_bus.setMessageIfEmpty(response);
                         changeCacheBlockState(address, 2); //Transition to Shared
                     }
-                    else if(message_type==BudRdX){
-                        BusMessage response = BusMessage(FlushOpt, attached_core, on_bus.address);
-                        if(response_bus.isEmpty()){
-                            response_bus.setMessage(response);
-                        }
+                    else if(message_type==BusRdX){
+                        BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                        response_bus.setMessageIfEmpty(response);
+
                         changeCacheBlockState(address, 0); //Transition to Invalid
                     }
                     break;
                 case 2: //If cache in Shared
                     if(message_type==BusRd){
-                        BusMessage response = BusMessage(FlushOpt, attached_core, on_bus.address);
-                        if(response_bus.isEmpty()){
-                            response_bus.setMessage(response);
-                        }
+                        BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                        response_bus.setMessageIfEmpty(response);
+
                     }
-                    else if(message_type==BudRdX){
-                        BusMessage response = BusMessage(FlushOpt, attached_core, on_bus.address);
-                        if(response_bus.isEmpty()){
-                            response_bus.setMessage(response);
-                        }
+                    else if(message_type==BusRdX){
+                        BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                        response_bus.setMessageIfEmpty(response);
+
                         changeCacheBlockState(address, 0); //Transition to Invalid
                     }
                     break;
                 case 3: //If cache in Modified
                     if(message_type==BusRd){
-                        BusMessage response = BusMessage(FlushOpt, attached_core, on_bus.address);
+                        BusMessage response = BusMessage(FlushOpt, attached_core, address);
                         response_bus.setMessageIfEmpty(response);
                         changeCacheBlockState(address, 2); //Transition to Shared
                     }
-                    else if(message_type==BudRdX){
-                        BusMessage response = BusMessage(FlushOpt, attached_core, on_bus.address);
+                    else if(message_type==BusRdX){
+                        BusMessage response = BusMessage(FlushOpt, attached_core, address);
                         response_bus.setMessageIfEmpty(response);
                         changeCacheBlockState(address, 0); //Transition to Invalid
                     }
                     break;
             }
         }
-        else{
-            return 0;
+        else { ;
         }
     }
 
     return 0;
 }
 
-int Cache::snoopResponseBus(){
-    if(response_bus.isEmpty()){
-        //Do something
+int Cache::snoopResponseBus(int current_instruction, uint current_address){
+    uint tag = current_address >> (N+M);
+    uint index = (current_address << (32-N-M)) >> (32-M);
+
+    //For read operations
+    if(current_instruction==0){
+        if(response_bus.isEmpty()){ //Transition to Exclusive
+            changeCacheBlockState(current_address, 1);
+            //TODO: put value in a file
+            return 100;  //Get from main memory
+        }
+        else{  //Transition to Share
+            BusMessage response = response_bus.getMessage(); //Stub data transfer between cache
+            changeCacheBlockState(current_address, 2);
+            //TODO: put value in a file
+            return 2; //Get from other cache
+        }
+
+    }
+    //TODO: For write operations
+    else if(current_instruction==1){
+        return 0;
     }
     else{
-        BusMessage response = response_bus.getMessage();
+        //Something's wrong
+        throw "problem";
+        return 0;
     }
-    return 0;
 }
 
 int Cache::writeAddress(uint address) {
-    return 0;
-}
-
-int Cache::initialize_cache(int cache_size, int associativity, int block_size) {
-    nb_cache_blocs = cache_size / (block_size * associativity);
-    for(int i=0; i<nb_cache_blocs; i++){
-        cache.push_back(list<CacheBlock>());
-        cache_content.push_back(unordered_set<uint>());
-    }
-    CacheBlock a = CacheBlock(1, 4);
-    cache[1].push_back(a);
     return 0;
 }
 

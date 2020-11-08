@@ -47,23 +47,26 @@ int Core::fill_instruction_buffer() {
 int Core::next_cycle() {
     if(!blocked){
         Operation current_operation = instruction_buffer.front();
-        instruction_buffer.pop();
 
         int current_instruction = current_operation.first;
         uint current_address = current_operation.second;
         this->blocked = true;
+        int done;
         switch(current_instruction){
             case 0:
-                prRd(current_address);
+                done = prRd(current_address);
                 break;
             case 1:
-                prWr(current_address);
+                done = prWr(current_address);
                 break;
             case 2:
                 this->cycles_to_wait += current_address;
+                done = 1;
                 break;
         }
-
+        if(done){
+            instruction_buffer.pop();
+        }
     }
     else{
         this->cycles_to_wait --;
@@ -77,9 +80,11 @@ int Core::prRd(uint address) {
     int cache_waiting_cycles = this->l1_cache.loadAddress(address);
     if(cache_waiting_cycles == -1){
         //Retry later
+        return 0;
     }
     else if(cache_waiting_cycles == -2){
-        //Snooping required to determine next state
+        //Snooping of response required to determine next state
+        this->snoopingPhaseRequired = true;
     }
     else{
         this->cycles_to_wait += cache_waiting_cycles;
@@ -92,8 +97,22 @@ int Core::prWr(uint address) {
     return 0;
 }
 
-int Core::cacheSnoop(uint address) {
-    int return_value = l1_cache.snoopMainBus(address);
-    //TODO: some logic here to get nb of cycle to wait
+int Core::cacheSnoop() {
+    int return_value = l1_cache.snoopMainBus();
     return 0;
+}
+
+int Core::cacheSnoopResponse() {
+    if(!snoopingPhaseRequired){
+        return 0;
+    }
+    Operation current_operation = instruction_buffer.front();
+
+    int current_instruction = current_operation.first;
+    uint current_address = current_operation.second;
+
+    int return_value = l1_cache.snoopResponseBus(current_instruction, current_address);
+    this->cycles_to_wait += return_value;
+    this->snoopingPhaseRequired=false;
+    return 1;
 }

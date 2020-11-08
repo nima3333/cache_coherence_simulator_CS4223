@@ -25,7 +25,8 @@ public:
     int next_cycle();
     int prRd(uint address);
     int prWr(uint address);
-    int cacheSnoop(uint address);
+    int cacheSnoop();
+    int cacheSnoopResponse();
 
 private:
     int core_number;  //To load the correct file
@@ -41,6 +42,8 @@ private:
     //FIXME: check that, nothing properly passed
     Cache l1_cache{Cache(1024, 2, 16, main_bus, response_bus, this->core_number)};
     queue<Operation> instruction_buffer;
+    bool snoopingPhaseRequired;
+
 };
 
 

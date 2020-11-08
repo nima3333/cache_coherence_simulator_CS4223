@@ -245,6 +245,7 @@ int Cache::addBlock(uint address, State state){
         cache[index].pop_front();
     }
     cache[index].emplace_back(state, tag);
+    cache_content[index].emplace(tag);
     return 0;
 }
 

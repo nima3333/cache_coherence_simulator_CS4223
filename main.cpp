@@ -30,6 +30,7 @@ int main() {
         c.cacheSnoop();
         c.cacheSnoopResponse();
         a.clearBus();
+        resp.clearBus();
     }
     return 0;
 

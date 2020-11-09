@@ -19,7 +19,6 @@ public:
 
 private:
     BusMessage message;
-    int random{rand()};
 };
 
 #endif //MULTICORE_BUS_H

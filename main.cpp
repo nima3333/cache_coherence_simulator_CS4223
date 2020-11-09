@@ -26,17 +26,17 @@ int main() {
     int i1, i2;
 
     do{
-        i1 = c1.next_cycle();
+        //i1 = c1.next_cycle();
         i2 = c2.next_cycle();
-        c1.cacheSnoop();
+        //c1.cacheSnoop();
         c2.cacheSnoop();
-        c1.cacheSnoopResponse();
+        //c1.cacheSnoopResponse();
         c2.cacheSnoopResponse();
         a.clearBus();
         resp.clearBus();
-    }while(i1!=1 or i2!=1);
+    } while(i2!=1);
 
-    c1.dumpCache();
+    //c1.dumpCache();
     c2.dumpCache();
 
 

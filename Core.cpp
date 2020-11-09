@@ -100,7 +100,22 @@ int Core::prRd(uint address) {
 }
 
 int Core::prWr(uint address) {
-    this->l1_cache.writeAddress(address);
+    int cache_waiting_cycles = this->l1_cache.writeAddress(address);
+    if(cache_waiting_cycles == -1){
+        //Retry later
+        this->blocked=false;
+        return 0;
+    }
+    else if(cache_waiting_cycles == -2){
+        //Snooping of response required to determine next state
+        this->snoopingPhaseRequired = true;
+        return 0;
+    }
+    else{
+        this->cycles_to_wait += cache_waiting_cycles;
+        return 1;
+    }
+
     return 0;
 }
 

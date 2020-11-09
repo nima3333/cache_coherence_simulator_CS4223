@@ -55,7 +55,6 @@ int Cache::loadAddress(uint address) {
             //TODO: get it, factorize
             //Bus transaction
             if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
-                //TODO: handle error (-1) in Core
                 return -1;
             }
             BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
@@ -76,7 +75,7 @@ int Cache::loadAddress(uint address) {
         }
         BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
         main_bus.setMessage(transaction);
-        //TODO: values in file for better readability
+        //TODO: doc for better readability
         return -2;
     }
     return 0;
@@ -152,19 +151,24 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address){
     if(current_instruction==0){
         if(response_bus.isEmpty()){ //Transition to Exclusive
             changeCacheBlockState(current_address, 1);
-            //TODO: put value in a file
             return timeConstants::main_memory_fetch;  //Get from main memory
         }
         else{  //Transition to Share
             BusMessage response = response_bus.getMessage(); //Stub data transfer between cache
             changeCacheBlockState(current_address, 2);
-            //TODO: put value in a file
             return timeConstants::cache_to_cache; //Get from other cache
         }
 
     }
-    //TODO: For write operations
+    //For write operations
     else if(current_instruction==1){
+        if(response_bus.isEmpty()){  // fetch from main memory
+            return timeConstants::main_memory_fetch;  //Get from main memory
+        }
+        else{  //fetch from cache
+            return timeConstants::cache_to_cache; //Get from other cache
+        }
+
         return 0;
     }
     else{
@@ -175,6 +179,53 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address){
 }
 
 int Cache::writeAddress(uint address) {
+    uint tag = address >> (N+M);
+    uint index = (address << (32-N-M)) >> (32-M);
+
+    //Check if exists in cache
+    if(cache_content[index].find(tag) != cache_content[index].end()){  //Present
+        //Cache hit ? Check state
+        State block_state = getCacheBlockState(address);
+
+        //Check state
+        if(block_state == 1){  //Exclusive block, just switch to Modified
+            //No bus transaction
+            changeCacheBlockState(address, 3);
+            return timeConstants::cache_hit;
+        }
+        else if(block_state == 3){  //Modified block, nothing to do
+            return timeConstants::cache_hit;
+        }
+        else if(block_state == 2){  //Shared block
+            if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
+                return -1;
+            }
+            BusMessage transaction = BusMessage(BusUpgr, this->attached_core, address);
+            main_bus.setMessage(transaction);
+            changeCacheBlockState(address, 3);
+            return timeConstants::cache_hit;
+        }
+        else if(block_state==0){  //Invalid block
+            if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
+                return -1;
+            }
+            //Put BusRdX, next steps depend of the other caches
+            BusMessage transaction = BusMessage(BusRdX, this->attached_core, address);
+            main_bus.setMessage(transaction);
+            changeCacheBlockState(address, 3);
+            return -2;
+        }
+    }
+    else{ //Not present
+        if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
+            return -1;
+        }
+        //Put BusRdX, next steps depend of the other caches
+        BusMessage transaction = BusMessage(BusRdX, this->attached_core, address);
+        main_bus.setMessage(transaction);
+        addBlock(address, 3);
+        return -2;
+    }
     return 0;
 }
 
@@ -203,7 +254,7 @@ CacheBlock& Cache::getCacheBlock(uint address) {
             return it;
         }
     }
-    //TODO: handle problem
+    throw invalid_argument("problem");
 }
 
 int Cache::getCacheBlockTag(uint address) {
@@ -245,7 +296,9 @@ int Cache::addBlock(uint address, State state){
     uint tag = address >> (N+M);
     uint index = (address << (32-N-M)) >> (32-M);
     if(cache[index].size()==associativity){
+        //TODO: during deletion, if has a dirty bit, must be evicted into main memory
         int tag_to_delete = cache[index].front().tag;
+        State state_to_delete = cache[index].front().state;
         cache[index].pop_front();
         cache_content[index].erase(tag_to_delete);
     }

@@ -33,6 +33,7 @@ int Cache::loadAddress(uint address) {
 
     //Check if exists in cache
     if(cache_content[index].find(tag) != cache_content[index].end()){  //Present
+        putLastUsed(address);
         //Cache hit ? Check state
         State block_state = getCacheBlockState(address);
         if(block_state == 0){  //Invalid block, will have to get it
@@ -42,7 +43,7 @@ int Cache::loadAddress(uint address) {
             }
             BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
             main_bus.setMessage(transaction);
-
+            return -2;
         }
         else{  //Cache Hit
             //Apply LRU rule
@@ -146,31 +147,29 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address){
     //For read operations
     if(current_instruction==0){
         if(response_bus.isEmpty()){ //Transition to Exclusive
-            changeCacheBlockState(current_address, 1);
-            return timeConstants::main_memory_fetch;  //Get from main memory
+            int extra_time = changeCacheBlockState(current_address, 1);
+            return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
         }
         else{  //Transition to Share
             BusMessage response = response_bus.getMessage(); //Stub data transfer between cache
-            changeCacheBlockState(current_address, 2);
-            return timeConstants::cache_to_cache; //Get from other cache
+            int extra_time = changeCacheBlockState(current_address, 2);
+            return timeConstants::cache_to_cache + extra_time; //Get from other cache
         }
 
     }
     //For write operations
     else if(current_instruction==1){
+        int extra_time = changeCacheBlockState(current_address, 3);
         if(response_bus.isEmpty()){  // fetch from main memory
-            return timeConstants::main_memory_fetch;  //Get from main memory
+            return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
         }
         else{  //fetch from cache
-            return timeConstants::cache_to_cache; //Get from other cache
+            return timeConstants::cache_to_cache + extra_time; //Get from other cache
         }
-
-        return 0;
     }
     else{
         //Something's wrong
         throw invalid_argument("load addr pb 2");
-        return 0;
     }
 }
 
@@ -180,13 +179,15 @@ int Cache::writeAddress(uint address) {
 
     //Check if exists in cache
     if(cache_content[index].find(tag) != cache_content[index].end()){  //Present
+        putLastUsed(address);
         //Cache hit ? Check state
         State block_state = getCacheBlockState(address);
 
         //Check state
         if(block_state == 1){  //Exclusive block, just switch to Modified
             //No bus transaction
-            changeCacheBlockState(address, 3);
+            int extra_time = changeCacheBlockState(address, 3);  //Extratime = 0 always here, no eviction in changing state
+            if(extra_time!=0) throw invalid_argument("extra time should be zero");
             return timeConstants::cache_hit;
         }
         else if(block_state == 3){  //Modified block, nothing to do
@@ -198,7 +199,8 @@ int Cache::writeAddress(uint address) {
             }
             BusMessage transaction = BusMessage(BusUpgr, this->attached_core, address);
             main_bus.setMessage(transaction);
-            changeCacheBlockState(address, 3);
+            int extra_time = changeCacheBlockState(address, 3);
+            if(extra_time!=0) throw invalid_argument("extra time should be zero");
             return timeConstants::cache_hit;
         }
         else if(block_state==0){  //Invalid block
@@ -208,7 +210,6 @@ int Cache::writeAddress(uint address) {
             //Put BusRdX, next steps depend of the other caches
             BusMessage transaction = BusMessage(BusRdX, this->attached_core, address);
             main_bus.setMessage(transaction);
-            changeCacheBlockState(address, 3);
             return -2;
         }
     }
@@ -219,7 +220,6 @@ int Cache::writeAddress(uint address) {
         //Put BusRdX, next steps depend of the other caches
         BusMessage transaction = BusMessage(BusRdX, this->attached_core, address);
         main_bus.setMessage(transaction);
-        addBlock(address, 3);
         return -2;
     }
     return 0;
@@ -291,16 +291,19 @@ int Cache::putLastUsed(uint address){
 int Cache::addBlock(uint address, State state){
     uint tag = address >> (N+M);
     uint index = (address << (32-N-M)) >> (32-M);
+    bool eviction = false;
     if(cache[index].size()==associativity){
         //TODO: during deletion, if has a dirty bit, must be evicted into main memory
         int tag_to_delete = cache[index].front().tag;
         State state_to_delete = cache[index].front().state;
         cache[index].pop_front();
         cache_content[index].erase(tag_to_delete);
+        //if modified, eviction needed
+        eviction = (state_to_delete == 3);
     }
     cache[index].emplace_back(state, tag);
     cache_content[index].emplace(tag);
-    return 0;
+    return timeConstants::eviction * eviction;
 }
 
 int Cache::changeCacheBlockState(uint address, State state){
@@ -316,10 +319,12 @@ int Cache::changeCacheBlockState(uint address, State state){
         }
     }
     if(!found){
-        addBlock(address, state);
+        int to_add = addBlock(address, state);
+        return to_add;
     }
-    return 0;
-
+    else{
+        return 0;
+    }
 }
 
 void Cache::dump() {

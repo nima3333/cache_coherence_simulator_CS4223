@@ -72,13 +72,11 @@ int Cache::loadAddress(uint address) {
     else{ //Not present
         //Bus transaction
         if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
-            printf("bus not empty");
-            //TODO: handle error (-1) in Core
             return -1;
         }
         BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
         main_bus.setMessage(transaction);
-        //FIXME: -2 is "waiting for snoop result"
+        //TODO: values in file for better readability
         return -2;
     }
     return 0;

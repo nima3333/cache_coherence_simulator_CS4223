@@ -23,8 +23,6 @@ int Cache::initialize_cache(int cache_size, int associativity, int block_size) {
         cache.emplace_back();
         cache_content.emplace_back();
     }
-    CacheBlock a = CacheBlock(1, 4);
-    cache[1].push_back(a);
     return 0;
 }
 
@@ -98,11 +96,13 @@ int Cache::snoopMainBus() {
         int inCache = isInCache(address);
         if(inCache){
             //Get state
-            int state = getCacheBlockTag(address);
+
+            int state = (int)getCacheBlockState(address).to_ulong();
             switch (state) {
                 case 0: //If cache is invalid, do nothing
                     return 0;
                 case 1: //If cache in Exclusive
+
                     if(message_type==BusRd){
                         BusMessage response = BusMessage(FlushOpt, attached_core, address);
                         response_bus.setMessageIfEmpty(response);
@@ -111,7 +111,6 @@ int Cache::snoopMainBus() {
                     else if(message_type==BusRdX){
                         BusMessage response = BusMessage(FlushOpt, attached_core, address);
                         response_bus.setMessageIfEmpty(response);
-
                         changeCacheBlockState(address, 0); //Transition to Invalid
                     }
                     break;
@@ -195,20 +194,28 @@ int Cache::isInCache(uint address) {
     }
 }
 
-int Cache::getCacheBlockTag(uint address) {
+CacheBlock& Cache::getCacheBlock(uint address) {
     uint tag = address >> (N+M);
     uint index = (address << (32-N-M)) >> (32-M);
 
     bool found = false;
-    CacheBlock hit;
-    for (list<CacheBlock>::iterator it=cache[index].begin(); it != cache[index].end(); ++it){
-        uint iter_tag = it->tag;
+    for (auto & it : cache[index]){
+        uint iter_tag = it.tag;
         if(iter_tag == tag){
-            hit = *it;
-            found = true;
+            return it;
         }
     }
+    //TODO: handle problem
+}
+
+int Cache::getCacheBlockTag(uint address) {
+    CacheBlock &hit = getCacheBlock(address);
     return hit.tag;
+}
+
+State Cache::getCacheBlockState(uint address) {
+    CacheBlock &hit = getCacheBlock(address);
+    return hit.state;
 }
 
 int Cache::putLastUsed(uint address){
@@ -254,21 +261,31 @@ int Cache::changeCacheBlockState(uint address, State state){
     uint index = (address << (32-N-M)) >> (32-M);
     //Find corresponding cache block
     bool found = false;
-    CacheBlock hit;
-    for (list<CacheBlock>::iterator it=cache[index].begin(); it != cache[index].end(); ++it){
-        uint iter_tag = it->tag;
-        if(iter_tag == tag){
-            hit = *it;
+    for (CacheBlock & it : cache[index]){
+        CacheBlock &hit = it;
+        if(hit.tag == tag){
+            hit.changeState(state);
             found = true;
         }
     }
     if(!found){
         addBlock(address, state);
     }
-    else{
-        hit.changeState(state);
-    }
     return 0;
+
+}
+
+void Cache::dump() {
+    int i,j;
+    i=j=0;
+    cout << "-----------" << endl << "* Cache dump " << this->attached_core << endl;
+    for (list<CacheBlock> & it : cache){
+        for (CacheBlock & it2 : it){
+            cout << "j : " << j << "  " << it2.tag << " " << it2.state.to_ulong() << endl;
+        }
+        j++;
+    }
+    cout << "end" << endl;
 
 }
 /*

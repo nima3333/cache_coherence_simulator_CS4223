@@ -6,7 +6,7 @@
 
 
 Core::Core(int core_id, Bus &main_bus, Bus &resp_bus)
-:l1_cache(Cache(1024, 1, 16, main_bus, resp_bus, core_id)), main_bus(main_bus), response_bus(resp_bus)
+:l1_cache(Cache(1024, 2, 16, main_bus, resp_bus, core_id)), main_bus(main_bus), response_bus(resp_bus)
 {
     this->core_number = core_id;
 
@@ -84,6 +84,7 @@ int Core::prRd(uint address) {
     int cache_waiting_cycles = this->l1_cache.loadAddress(address);
     if(cache_waiting_cycles == -1){
         //Retry later
+        this->blocked=false;
         return 0;
     }
     else if(cache_waiting_cycles == -2){
@@ -122,4 +123,8 @@ int Core::cacheSnoopResponse() {
     this->snoopingPhaseRequired=false;
     instruction_buffer.pop();
     return 1;
+}
+
+void Core::dumpCache(){
+    l1_cache.dump();
 }

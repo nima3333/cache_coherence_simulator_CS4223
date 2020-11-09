@@ -10,6 +10,7 @@
 #include "constants.h"
 
 #include <cmath>
+#include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -36,6 +37,8 @@ public:
     int snoopMainBus();
     int snoopResponseBus(int current_instruction, uint current_address);
 
+    void dump();
+
 private:
     vector<list<CacheBlock>> cache;
     vector<unordered_set<uint>> cache_content;
@@ -61,6 +64,10 @@ private:
     int changeCacheBlockState(uint address, State state);
 
     int addBlock(uint address, State state);
+
+    State getCacheBlockState(uint address);
+
+    CacheBlock& getCacheBlock(uint address);
 };
 
 #endif //MULTICORE_CACHE_H

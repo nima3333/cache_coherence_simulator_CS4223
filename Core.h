@@ -27,7 +27,7 @@ public:
     int prWr(uint address);
     int cacheSnoop();
     int cacheSnoopResponse();
-
+    void dumpCache();
     Cache l1_cache;
 private:
     int core_number;  //To load the correct file

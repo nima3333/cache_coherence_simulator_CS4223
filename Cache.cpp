@@ -241,8 +241,10 @@ int Cache::putLastUsed(uint address){
 int Cache::addBlock(uint address, State state){
     uint tag = address >> (N+M);
     uint index = (address << (32-N-M)) >> (32-M);
-    if(cache.size()==associativity){
+    if(cache[index].size()==associativity){
+        int tag_to_delete = cache[index].front().tag;
         cache[index].pop_front();
+        cache_content[index].erase(tag_to_delete);
     }
     cache[index].emplace_back(state, tag);
     cache_content[index].emplace(tag);

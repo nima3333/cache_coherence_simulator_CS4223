@@ -28,7 +28,6 @@ public:
     int cacheSnoop();
     int cacheSnoopResponse();
 
-    Bus &main_bus;
     Cache l1_cache;
 private:
     int core_number;  //To load the correct file
@@ -39,6 +38,7 @@ private:
     bool blocked{0};
     int cycles_to_wait{0};
     bool work_done{0};
+    Bus &main_bus;
     Bus &response_bus;
     queue<Operation> instruction_buffer;
     bool snoopingPhaseRequired{false};

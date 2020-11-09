@@ -22,7 +22,6 @@ int main() {
     BusMessage b = BusMessage();
     Core c = Core(0, a, resp);
 
-    printf("%p %p %p", &a, &(c.main_bus), &(c.l1_cache.main_bus));
     int i = c.next_cycle();
     c.cacheSnoop();
     c.cacheSnoopResponse();

@@ -6,7 +6,7 @@
 #define MULTICORE_BUS_H
 
 #include "BusMessage.h"
-#include <stdlib.h>
+#include <cstdlib>
 
 class Bus {
 public:

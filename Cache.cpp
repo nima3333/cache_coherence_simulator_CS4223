@@ -110,6 +110,11 @@ int Cache::snoopMainBus() {
                         response_bus.setMessageIfEmpty(response);
                         changeCacheBlockState(address, 0); //Transition to Invalid
                     }
+                    /* Not necessary, only in share
+                    else if(message_type==BusUpgr){
+                        changeCacheBlockState(address, 0); //Transition to Invalid
+                    }
+                     */
                     break;
                 case 2: //If cache in Shared
                     if(message_type==BusRd){
@@ -121,6 +126,9 @@ int Cache::snoopMainBus() {
                         BusMessage response = BusMessage(FlushOpt, attached_core, address);
                         response_bus.setMessageIfEmpty(response);
 
+                        changeCacheBlockState(address, 0); //Transition to Invalid
+                    }
+                    else if(message_type==BusUpgr){
                         changeCacheBlockState(address, 0); //Transition to Invalid
                     }
                     break;
@@ -135,6 +143,11 @@ int Cache::snoopMainBus() {
                         response_bus.setMessageIfEmpty(response);
                         changeCacheBlockState(address, 0); //Transition to Invalid
                     }
+                    /* Not necessary, only in share
+                    else if(message_type==BusUpgr){
+                        changeCacheBlockState(address, 0); //Transition to Invalid
+                    }
+                     */
                     break;
             }
         }

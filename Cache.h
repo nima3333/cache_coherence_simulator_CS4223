@@ -7,6 +7,8 @@
 
 #include "Bus.h"
 #include "CacheBlock.h"
+#include "constants.h"
+
 #include <cmath>
 #include <fstream>
 #include <string>
@@ -18,7 +20,7 @@
 #include <algorithm>
 
 using namespace std;
-
+using namespace timeConstants;
 
 typedef unsigned int uint;
 

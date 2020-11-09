@@ -67,8 +67,8 @@ int Cache::loadAddress(uint address) {
         else{  //Cache Hit
             //Apply LRU rule
             putLastUsed(address);
-            //Number of cycles to wait TODO: define it in a file
-            return 1;
+            //Number of cycles to wait
+            return timeConstants::cache_hit;
         }
     }
     else{ //Not present
@@ -150,21 +150,19 @@ int Cache::snoopMainBus() {
 }
 
 int Cache::snoopResponseBus(int current_instruction, uint current_address){
-    uint tag = current_address >> (N+M);
-    uint index = (current_address << (32-N-M)) >> (32-M);
 
     //For read operations
     if(current_instruction==0){
         if(response_bus.isEmpty()){ //Transition to Exclusive
             changeCacheBlockState(current_address, 1);
             //TODO: put value in a file
-            return 2;  //Get from main memory
+            return timeConstants::main_memory_fetch;  //Get from main memory
         }
         else{  //Transition to Share
             BusMessage response = response_bus.getMessage(); //Stub data transfer between cache
             changeCacheBlockState(current_address, 2);
             //TODO: put value in a file
-            return 5; //Get from other cache
+            return timeConstants::cache_to_cache; //Get from other cache
         }
 
     }

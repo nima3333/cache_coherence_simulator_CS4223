@@ -34,25 +34,8 @@ int Cache::loadAddress(uint address) {
     //Check if exists in cache
     if(cache_content[index].find(tag) != cache_content[index].end()){  //Present
         //Cache hit ? Check state
-
-        //Get cache block
-        bool found = false;
-        CacheBlock hit;
-        //TO_TEST
-        //for (list<CacheBlock>::iterator it=cache[index].begin(); it != cache[index].end(); ++it){
-        for (auto & it : cache[index]){
-            uint iter_tag = it.tag;
-            if(iter_tag == tag){
-                hit = it;
-                found = true;
-            }
-        }
-        //TODO: to put in a function
-        if(!found) throw invalid_argument("load addr pb 1");
-
-        //Check state
-        if(hit.state == 0){  //Invalid block, will have to get it
-            //TODO: get it, factorize
+        State block_state = getCacheBlockState(address);
+        if(block_state == 0){  //Invalid block, will have to get it
             //Bus transaction
             if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
                 return -1;
@@ -352,23 +335,3 @@ void Cache::dump() {
     cout << "end" << endl;
 
 }
-/*
- * //TODO: put this elsewhere, after every core reported for the transaction
-    if(cache_content[index].size() < associativity){ //Cache is not full
-        //TODO: just add in cache
-    }
-    else{  //Cache is full
-        //TODO: LRU replacement
-        //Delete front one
-        cache_block to_remove = cache[index].front();
-        cache[index].pop_front();
-        cache_content[index].erase(to_remove.tag);
-
-        //Insertion
-        cache_content[index].insert(tag);
-        cache_block to_add;
-        to_add.tag = tag;
-        to_add.state = 0;
-        cache[index].push_back(to_add);
-    }
- */

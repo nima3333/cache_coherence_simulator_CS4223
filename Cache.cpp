@@ -4,13 +4,12 @@
 
 #include "Cache.h"
 
-Cache::Cache(int cache_size, int associativity, int block_size, Bus &main_bus, Bus &response_bus, int attached_core)
+Cache::Cache(int cache_size, int associativity, int block_size, Bus &main_bus, Bus &response_bus_arg, int attached_core)
+:main_bus(main_bus), response_bus(response_bus_arg)
 {
     this->cache_size = cache_size;
     this->associativity = associativity;
     this->block_size = block_size;
-    this->main_bus = main_bus;
-    this->response_bus = response_bus;
     this->attached_core = attached_core;
     initialize_cache(cache_size, associativity, block_size);
     this->N = (int)ceil(log2(block_size/4));
@@ -75,6 +74,7 @@ int Cache::loadAddress(uint address) {
     else{ //Not present
         //Bus transaction
         if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
+            printf("bus not empty");
             //TODO: handle error (-1) in Core
             return -1;
         }
@@ -158,13 +158,13 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address){
         if(response_bus.isEmpty()){ //Transition to Exclusive
             changeCacheBlockState(current_address, 1);
             //TODO: put value in a file
-            return 100;  //Get from main memory
+            return 2;  //Get from main memory
         }
         else{  //Transition to Share
             BusMessage response = response_bus.getMessage(); //Stub data transfer between cache
             changeCacheBlockState(current_address, 2);
             //TODO: put value in a file
-            return 2; //Get from other cache
+            return 5; //Get from other cache
         }
 
     }

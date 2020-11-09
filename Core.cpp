@@ -6,10 +6,8 @@
 
 
 Core::Core(int core_id, Bus &main_bus, Bus &resp_bus)
-:l1_cache(Cache(1024, 2, 16, main_bus, resp_bus, core_id))
+:l1_cache(Cache(1024, 2, 16, main_bus, resp_bus, core_id)), main_bus(main_bus), response_bus(resp_bus)
 {
-    this->main_bus = main_bus;
-    this->response_bus = resp_bus;
     this->core_number = core_id;
 
     fill_instruction_buffer();
@@ -84,6 +82,7 @@ int Core::next_cycle() {
 
 int Core::prRd(uint address) {
     int cache_waiting_cycles = this->l1_cache.loadAddress(address);
+    printf("read status %d", cache_waiting_cycles);
     if(cache_waiting_cycles == -1){
         //Retry later
         return 0;

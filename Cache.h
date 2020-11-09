@@ -34,6 +34,7 @@ public:
     int snoopMainBus();
     int snoopResponseBus(int current_instruction, uint current_address);
 
+    Bus &main_bus;
 private:
     vector<list<CacheBlock>> cache;
     vector<unordered_set<uint>> cache_content;
@@ -44,8 +45,8 @@ private:
     uint M;
     int nb_cache_blocs;
     int initialize_cache(int cache_size, int associativity, int block_size);
-    Bus main_bus;
-    Bus response_bus;
+
+    Bus &response_bus;
 
     int attached_core;
 

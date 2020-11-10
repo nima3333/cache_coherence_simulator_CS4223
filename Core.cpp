@@ -13,7 +13,8 @@ Core::Core(int core_id, Bus &main_bus, Bus &resp_bus)
     fill_instruction_buffer();
 }
 
-int Core::fill_instruction_buffer() {
+int Core::fill_instruction_buffer()
+{
     //Get the proper file name, let's assume we do not use C++20
     //string file_name = format("/file/{}_{}.data", program, core_number);    C++20 way
     string filename = string("../files/") + program + string("_") + to_string(core_number) + string(".data");

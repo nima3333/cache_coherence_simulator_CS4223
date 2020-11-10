@@ -51,23 +51,17 @@ private:
     int initialize_cache(int cache_size, int associativity, int block_size);
     Bus &main_bus;
     Bus &response_bus;
-
     int attached_core;
-
     int isInCache(uint address);
-
     int getCacheBlockTag(uint address);
-
     int putLastUsed(uint address);
-
-
     int changeCacheBlockState(uint address, State state);
-
     int addBlock(uint address, State state);
-
     State getCacheBlockState(uint address);
-
     CacheBlock& getCacheBlock(uint address);
+    //Statistics
+    int cache_miss{0};
+    int cache_hit{0};
 };
 
 #endif //MULTICORE_CACHE_H

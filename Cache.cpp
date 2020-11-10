@@ -4,6 +4,8 @@
 
 #include "Cache.h"
 
+//TODO: verify write back / write allocate
+
 Cache::Cache(int cache_size, int associativity, int block_size, Bus &main_bus, Bus &response_bus_arg, int attached_core)
 :main_bus(main_bus), response_bus(response_bus_arg)
 {
@@ -41,11 +43,17 @@ int Cache::loadAddress(uint address) {
             if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
                 return -1;
             }
+            //Register cache miss
+            cache_miss++;
+
             BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
             main_bus.setMessage(transaction);
             return -2;
         }
         else{  //Cache Hit
+            //Register cache Hit
+            cache_hit++;
+
             //Apply LRU rule
             putLastUsed(address);
             //Number of cycles to wait
@@ -57,6 +65,8 @@ int Cache::loadAddress(uint address) {
         if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
             return -1;
         }
+        //Register cache miss
+        cache_miss++;
         BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
         main_bus.setMessage(transaction);
         //TODO: doc for better readability
@@ -185,18 +195,24 @@ int Cache::writeAddress(uint address) {
 
         //Check state
         if(block_state == 1){  //Exclusive block, just switch to Modified
+            //Register cache Hit
+            cache_hit++;
             //No bus transaction
             int extra_time = changeCacheBlockState(address, 3);  //Extratime = 0 always here, no eviction in changing state
             if(extra_time!=0) throw invalid_argument("extra time should be zero");
             return timeConstants::cache_hit;
         }
         else if(block_state == 3){  //Modified block, nothing to do
+            //Register cache Hit
+            cache_hit++;
             return timeConstants::cache_hit;
         }
         else if(block_state == 2){  //Shared block
             if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
                 return -1;
             }
+            //Register cache Hit
+            cache_hit++;
             BusMessage transaction = BusMessage(BusUpgr, this->attached_core, address);
             main_bus.setMessage(transaction);
             int extra_time = changeCacheBlockState(address, 3);
@@ -207,6 +223,8 @@ int Cache::writeAddress(uint address) {
             if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
                 return -1;
             }
+            //Register cache miss
+            cache_miss++;
             //Put BusRdX, next steps depend of the other caches
             BusMessage transaction = BusMessage(BusRdX, this->attached_core, address);
             main_bus.setMessage(transaction);
@@ -217,6 +235,8 @@ int Cache::writeAddress(uint address) {
         if(!main_bus.isEmpty()){  //Bus occupied, cannot proceeds
             return -1;
         }
+        //Register cache miss
+        cache_miss++;
         //Put BusRdX, next steps depend of the other caches
         BusMessage transaction = BusMessage(BusRdX, this->attached_core, address);
         main_bus.setMessage(transaction);
@@ -293,7 +313,6 @@ int Cache::addBlock(uint address, State state){
     uint index = (address << (32-N-M)) >> (32-M);
     bool eviction = false;
     if(cache[index].size()==associativity){
-        //TODO: during deletion, if has a dirty bit, must be evicted into main memory
         int tag_to_delete = cache[index].front().tag;
         State state_to_delete = cache[index].front().state;
         cache[index].pop_front();

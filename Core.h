@@ -32,9 +32,6 @@ public:
 private:
     int core_number;  //To load the correct file
     string program{"test"};
-    int store_counter{0}; //Store the number of stores
-    int load_counter{0};
-    int computing_counter{0};
     bool blocked{0};
     int cycles_to_wait{0};
     bool work_done{0};
@@ -42,6 +39,12 @@ private:
     Bus &response_bus;
     queue<Operation> instruction_buffer;
     bool snoopingPhaseRequired{false};
+    //Statistics
+    int store_counter{0};
+    int load_counter{0};
+    int computing_counter{0};
+    int idle_counter{0};
+
 
 };
 

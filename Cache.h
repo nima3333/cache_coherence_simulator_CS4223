@@ -29,6 +29,7 @@ enum instruction {Load=0, Store=1, Computation=2};
 typedef pair<int, uint> Operation;
 typedef bitset<2> State;
 
+
 class Cache {
 public:
     Cache(int c_size, int asso, int b_size, Bus &main_bus, Bus &reponse_bus, int attached_core);
@@ -36,8 +37,11 @@ public:
     int writeAddress(uint address);
     int snoopMainBus();
     int snoopResponseBus(int current_instruction, uint current_address);
-
+    //Debug tool
     void dump();
+    //Statistics
+    long long getCacheMissNumber() const;
+    long long getCacheHitNumber() const;
 
 private:
     vector<list<CacheBlock>> cache;
@@ -60,8 +64,10 @@ private:
     State getCacheBlockState(uint address);
     CacheBlock& getCacheBlock(uint address);
     //Statistics
-    int cache_miss{0};
-    int cache_hit{0};
+    long long cache_miss{0};
+    long long cache_hit{0};
+
+
 };
 
 #endif //MULTICORE_CACHE_H

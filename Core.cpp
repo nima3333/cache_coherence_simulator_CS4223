@@ -13,6 +13,15 @@ Core::Core(int core_id, Bus &main_bus, Bus &resp_bus)
     fill_instruction_buffer();
 }
 
+Core::Core(int core_id, Bus &main_bus, Bus &resp_bus, string program_name)
+        :l1_cache(Cache(1024, 2, 16, main_bus, resp_bus, core_id)), main_bus(main_bus), response_bus(resp_bus),
+        program(program_name)
+{
+    this->core_number = core_id;
+
+    fill_instruction_buffer();
+}
+
 int Core::fill_instruction_buffer()
 {
     //Get the proper file name, let's assume we do not use C++20
@@ -60,13 +69,16 @@ int Core::next_cycle() {
         switch(current_instruction){
             case 0:
                 done = prRd(current_address);
+                this->load_counter ++;
                 break;
             case 1:
                 done = prWr(current_address);
+                this->store_counter ++;
                 break;
             case 2:
                 this->cycles_to_wait += current_address;
                 done = 1;
+                this->computing_counter ++;
                 break;
         }
         if(done){
@@ -76,6 +88,7 @@ int Core::next_cycle() {
     else{
         this->cycles_to_wait --;
         this->blocked = (this->cycles_to_wait != 0);
+        this->idle_counter ++;
     }
 
     return 0;
@@ -143,4 +156,18 @@ int Core::cacheSnoopResponse() {
 
 void Core::dumpCache(){
     l1_cache.dump();
+}
+
+float Core::getCacheMissRate() const{
+    long long cache_miss = l1_cache.getCacheMissNumber();
+    long long cache_hit = l1_cache.getCacheHitNumber();
+    return float(cache_miss)/float(cache_miss+cache_hit);
+}
+
+long long Core::getCacheMiss() const{
+    return l1_cache.getCacheMissNumber();
+}
+
+long long Core::getCacheHit() const{
+    return l1_cache.getCacheHitNumber();
 }

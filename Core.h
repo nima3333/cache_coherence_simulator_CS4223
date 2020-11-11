@@ -21,6 +21,7 @@ typedef pair<int, uint> Operation;
 class Core {
 public:
     Core(int core_id, Bus &main_bus, Bus &resp_bus);
+    Core(int core_id, Bus &main_bus, Bus &resp_bus, string program);
     int fill_instruction_buffer();
     int next_cycle();
     int prRd(uint address);
@@ -29,9 +30,13 @@ public:
     int cacheSnoopResponse();
     void dumpCache();
     Cache l1_cache;
+    float getCacheMissRate() const;
+    long long int getCacheMiss() const;
+    long long int getCacheHit() const;
+
 private:
     int core_number;  //To load the correct file
-    string program{"test"};
+    string program{"bodytrack"};
     bool blocked{0};
     int cycles_to_wait{0};
     bool work_done{0};
@@ -40,11 +45,10 @@ private:
     queue<Operation> instruction_buffer;
     bool snoopingPhaseRequired{false};
     //Statistics
-    int store_counter{0};
-    int load_counter{0};
-    int computing_counter{0};
-    int idle_counter{0};
-
+    long long store_counter{0};
+    long long load_counter{0};
+    long long computing_counter{0};
+    long long idle_counter{0};
 
 };
 

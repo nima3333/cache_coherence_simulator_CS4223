@@ -5,6 +5,7 @@
 #include "Cache.h"
 
 //TODO: verify write back / write allocate
+//TODO: verify cache block number, etc
 
 Cache::Cache(int cache_size, int associativity, int block_size, Bus &main_bus, Bus &response_bus_arg, int attached_core)
 :main_bus(main_bus), response_bus(response_bus_arg)
@@ -127,6 +128,7 @@ int Cache::snoopMainBus() {
                     }
                     break;
                 case 3: //If cache in Modified
+                    //FIXME: do we need to take into account cycles when it put data on bus ??
                     if(message_type==BusRd){
                         BusMessage response = BusMessage(FlushOpt, attached_core, address);
                         response_bus.setMessageIfEmpty(response);
@@ -163,7 +165,7 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address){
         else{  //Transition to Share
             BusMessage response = response_bus.getMessage(); //Stub data transfer between cache
             int extra_time = changeCacheBlockState(current_address, 2);
-            return timeConstants::cache_to_cache + extra_time; //Get from other cache
+            return this->block_size * timeConstants::cache_to_cache + extra_time; //Get from other cache
         }
 
     }
@@ -174,7 +176,7 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address){
             return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
         }
         else{  //fetch from cache
-            return timeConstants::cache_to_cache + extra_time; //Get from other cache
+            return this->block_size * timeConstants::cache_to_cache + extra_time; //Get from other cache
         }
     }
     else{
@@ -311,18 +313,18 @@ int Cache::putLastUsed(uint address){
 int Cache::addBlock(uint address, State state){
     uint tag = address >> (N+M);
     uint index = (address << (32-N-M)) >> (32-M);
-    bool eviction = false;
+    bool block_eviction = false;
     if(cache[index].size()==associativity){
         int tag_to_delete = cache[index].front().tag;
         State state_to_delete = cache[index].front().state;
         cache[index].pop_front();
         cache_content[index].erase(tag_to_delete);
         //if modified, eviction needed
-        eviction = (state_to_delete == 3);
+        block_eviction = (state_to_delete == 3);
     }
     cache[index].emplace_back(state, tag);
     cache_content[index].emplace(tag);
-    return timeConstants::eviction * eviction;
+    return timeConstants::eviction * block_eviction;
 }
 
 int Cache::changeCacheBlockState(uint address, State state){
@@ -357,5 +359,12 @@ void Cache::dump() {
         j++;
     }
     cout << "end" << endl;
+}
 
+long long Cache::getCacheMissNumber() const{
+    return cache_miss;
+}
+
+long long Cache::getCacheHitNumber() const{
+    return cache_hit;
 }

@@ -19,8 +19,11 @@ using namespace std;
 int main() {
 	cout << "Hello World!!!" << endl; // prints !!!Hello World!!!
 
-	int nb_cores = 2;
-	CoreCluster cl = CoreCluster(nb_cores);
+	//Get protocol
+	string protocol = _argv[1];
+
+	int nb_cores = 4;
+	CoreCluster cl = CoreCluster(4, "bodytrack", 1024, 2, 16);
     int j;
 
     do{

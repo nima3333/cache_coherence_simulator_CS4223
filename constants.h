@@ -12,4 +12,10 @@ namespace timeConstants{
     const int eviction = 100;
 }
 
+namespace protocolNames{
+    const string mesi = "mesi";
+    const string dragon = "dragon";
+
+}
+
 #endif //MULTICORE_CONSTANTS_H

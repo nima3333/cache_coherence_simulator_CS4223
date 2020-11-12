@@ -10,6 +10,18 @@ bool Bus::isEmpty() {
 
 void Bus::setMessage(BusMessage message) {
     this->message = message;
+
+    //For response bus, data traffic only here
+    if(message.type == FlushOpt){
+        data_traffic += block_size;
+    }
+
+    //For main bus, BusRdx is an invalidation
+    if(message.type == BusRdX){
+        invalidations ++;
+    }
+
+    //TODO: updates for Dragon
 }
 
 BusMessage Bus::getMessage() {
@@ -20,7 +32,7 @@ void Bus::clearBus() {
     this->message = BusMessage();
 }
 
-Bus::Bus() {
+Bus::Bus(int block_size):block_size(block_size) {
 }
 
 void Bus::setMessageIfEmpty(BusMessage message) {

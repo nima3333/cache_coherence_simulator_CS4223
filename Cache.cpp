@@ -324,12 +324,26 @@ int Cache::addBlock(uint address, State state){
     }
     cache[index].emplace_back(state, tag);
     cache_content[index].emplace(tag);
+    //Statistics on Shared/Private lines
+    if(state==2 or state==1){  //if block in Exclusive or Share, shared data
+        shared_data++;
+    }
+    else if(state==3){ //If block in Modified, private data
+        private_data++;
+    }
     return timeConstants::eviction * block_eviction;
 }
 
 int Cache::changeCacheBlockState(uint address, State state){
     uint tag = address >> (N+M);
     uint index = (address << (32-N-M)) >> (32-M);
+    //Statistics on Shared/Private lines
+    if(state==2 or state==1){  //if block in Exclusive or Share, shared data
+        shared_data++;
+    }
+    else if(state==3){ //If block in Modified, private data
+        private_data++;
+    }
     //Find corresponding cache block
     bool found = false;
     for (CacheBlock & it : cache[index]){

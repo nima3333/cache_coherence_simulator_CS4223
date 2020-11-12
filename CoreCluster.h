@@ -10,8 +10,7 @@
 
 class CoreCluster {
 public:
-    explicit CoreCluster(int nb_cores);
-    CoreCluster(int nb_cores, string program_name);
+    CoreCluster(int nb_cores, string program_name, int cache_size, int associativity, int block_size);
     int nextCycle();
     void cacheSnoop();
     void cacheSnoopResponse();
@@ -21,8 +20,11 @@ private:
     int nb_cores{2};
     string program{"bodytrack"};
     vector<Core> cores;
-    Bus main_bus{Bus()};
-    Bus response_bus{Bus()};
+    int block_size;
+    int cache_size;
+    int associativity;
+    Bus main_bus;
+    Bus response_bus;
 };
 
 

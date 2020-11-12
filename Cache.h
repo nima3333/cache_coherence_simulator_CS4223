@@ -66,7 +66,8 @@ private:
     //Statistics
     long long cache_miss{0};
     long long cache_hit{0};
-
+    long long private_data{0};
+    long long shared_data{0};
 
 };
 

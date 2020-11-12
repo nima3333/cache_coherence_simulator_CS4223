@@ -10,7 +10,7 @@
 
 class Bus {
 public:
-    Bus();
+    Bus(int block_size);
     bool isEmpty();
     void setMessage(BusMessage message);
     void setMessageIfEmpty(BusMessage message);
@@ -19,6 +19,10 @@ public:
 
 private:
     BusMessage message;
+    long long data_traffic{0};
+    long long invalidations{0};
+    long long updates{0};
+    int block_size;
 };
 
 #endif //MULTICORE_BUS_H

@@ -4,6 +4,7 @@
 
 #include "Core.h"
 
+//TODO: pass cache parameters
 
 Core::Core(int core_id, Bus &main_bus, Bus &resp_bus)
 :l1_cache(Cache(1024, 2, 16, main_bus, resp_bus, core_id)), main_bus(main_bus), response_bus(resp_bus)

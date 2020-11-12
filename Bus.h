@@ -11,10 +11,15 @@
 class Bus {
 public:
     Bus(int block_size);
+
     bool isEmpty();
+
     void setMessage(BusMessage message);
+
     void setMessageIfEmpty(BusMessage message);
+
     BusMessage getMessage();
+
     void clearBus();
 
 private:

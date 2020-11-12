@@ -11,11 +11,17 @@
 class CoreCluster {
 public:
     CoreCluster(int nb_cores, string program_name, int cache_size, int associativity, int block_size);
+
     int nextCycle();
+
     void cacheSnoop();
+
     void cacheSnoopResponse();
+
     void clearBuses();
+
     void debug();
+
 private:
     int nb_cores{2};
     string program{"bodytrack"};

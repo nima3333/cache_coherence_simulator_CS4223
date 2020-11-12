@@ -21,17 +21,29 @@ typedef pair<int, uint> Operation;
 class Core {
 public:
     Core(int core_id, Bus &main_bus, Bus &resp_bus);
+
     Core(int core_id, Bus &main_bus, Bus &resp_bus, string program);
+
     int fill_instruction_buffer();
+
     int next_cycle();
+
     int prRd(uint address);
+
     int prWr(uint address);
+
     int cacheSnoop();
+
     int cacheSnoopResponse();
+
     void dumpCache();
+
     Cache l1_cache;
+
     float getCacheMissRate() const;
+
     long long int getCacheMiss() const;
+
     long long int getCacheHit() const;
 
 private:

@@ -22,11 +22,16 @@ typedef unsigned int uint;
 class CacheBlock {
 public:
     CacheBlock();
+
     CacheBlock(State state, uint tag);
+
     State state;
     uint tag{};
-    bool operator == (const CacheBlock& s) const { return state == s.state && tag == s.tag; }
-    bool operator != (const CacheBlock& s) const { return !operator==(s); }
+
+    bool operator==(const CacheBlock &s) const { return state == s.state && tag == s.tag; }
+
+    bool operator!=(const CacheBlock &s) const { return !operator==(s); }
+
     void changeState(State new_state);
 };
 

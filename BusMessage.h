@@ -19,6 +19,7 @@ enum MessageType {
 class BusMessage {
 public:
     BusMessage(MessageType type, int senderid);
+
     BusMessage(MessageType type, int senderid, uint address);
 
     BusMessage();

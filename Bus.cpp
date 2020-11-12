@@ -5,20 +5,20 @@
 #include "Bus.h"
 
 bool Bus::isEmpty() {
-    return this->message.type==Void;
+    return this->message.type == Void;
 }
 
 void Bus::setMessage(BusMessage message) {
     this->message = message;
 
     //For response bus, data traffic only here
-    if(message.type == FlushOpt){
+    if (message.type == FlushOpt) {
         data_traffic += block_size;
     }
 
     //For main bus, BusRdx is an invalidation
-    if(message.type == BusRdX){
-        invalidations ++;
+    if (message.type == BusRdX) {
+        invalidations++;
     }
 
     //TODO: updates for Dragon
@@ -32,11 +32,11 @@ void Bus::clearBus() {
     this->message = BusMessage();
 }
 
-Bus::Bus(int block_size):block_size(block_size) {
+Bus::Bus(int block_size) : block_size(block_size) {
 }
 
 void Bus::setMessageIfEmpty(BusMessage message) {
-    if(isEmpty()){
+    if (isEmpty()) {
         this->message = message;
     }
 }

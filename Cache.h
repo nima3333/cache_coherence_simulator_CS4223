@@ -25,7 +25,9 @@ using namespace timeConstants;
 
 typedef unsigned int uint;
 
-enum instruction {Load=0, Store=1, Computation=2};
+enum instruction {
+    Load = 0, Store = 1, Computation = 2
+};
 typedef pair<int, uint> Operation;
 typedef bitset<2> State;
 
@@ -33,14 +35,21 @@ typedef bitset<2> State;
 class Cache {
 public:
     Cache(int c_size, int asso, int b_size, Bus &main_bus, Bus &reponse_bus, int attached_core);
+
     int loadAddress(uint address);
+
     int writeAddress(uint address);
+
     int snoopMainBus();
+
     int snoopResponseBus(int current_instruction, uint current_address);
+
     //Debug tool
     void dump();
+
     //Statistics
     long long getCacheMissNumber() const;
+
     long long getCacheHitNumber() const;
 
 private:
@@ -52,17 +61,27 @@ private:
     uint N;
     uint M;
     int nb_cache_blocs;
+
     int initialize_cache(int cache_size, int associativity, int block_size);
+
     Bus &main_bus;
     Bus &response_bus;
     int attached_core;
+
     int isInCache(uint address);
+
     int getCacheBlockTag(uint address);
+
     int putLastUsed(uint address);
+
     int changeCacheBlockState(uint address, State state);
+
     int addBlock(uint address, State state);
+
     State getCacheBlockState(uint address);
-    CacheBlock& getCacheBlock(uint address);
+
+    CacheBlock &getCacheBlock(uint address);
+
     //Statistics
     long long cache_miss{0};
     long long cache_hit{0};

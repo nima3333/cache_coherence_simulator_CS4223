@@ -10,7 +10,7 @@
 
 class CoreCluster {
 public:
-    CoreCluster(int nb_cores, string program_name, int cache_size, int associativity, int block_size);
+    CoreCluster(int nb_cores, const string& program_name, int cache_size, int associativity, int block_size);
 
     int nextCycle();
 

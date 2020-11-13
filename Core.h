@@ -20,19 +20,19 @@ typedef pair<int, uint> Operation;
 
 class Core {
 public:
-    Core(int core_id, Bus &main_bus, Bus &resp_bus);
 
-    Core(int core_id, Bus &main_bus, Bus &resp_bus, string program);
+    Core(int core_id, int cache_size, int associativity, int block_size, Bus &main_bus, Bus &resp_bus,
+         string program_name);
 
     int fill_instruction_buffer();
 
-    int next_cycle();
+    [[nodiscard]] int next_cycle();
 
-    int prRd(uint address);
+    [[nodiscard]] int prRd(uint address);
 
-    int prWr(uint address);
+    [[nodiscard]] int prWr(uint address);
 
-    int cacheSnoop();
+    void cacheSnoop();
 
     int cacheSnoopResponse();
 
@@ -40,11 +40,11 @@ public:
 
     Cache l1_cache;
 
-    float getCacheMissRate() const;
+    [[nodiscard]] float getCacheMissRate() const;
 
-    long long int getCacheMiss() const;
+    [[nodiscard]] long long int getCacheMiss() const;
 
-    long long int getCacheHit() const;
+    [[nodiscard]] long long int getCacheHit() const;
 
 private:
     int core_number;  //To load the correct file

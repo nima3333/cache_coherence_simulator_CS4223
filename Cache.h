@@ -36,21 +36,21 @@ class Cache {
 public:
     Cache(int c_size, int asso, int b_size, Bus &main_bus, Bus &reponse_bus, int attached_core);
 
-    int loadAddress(uint address);
+    [[nodiscard]] int loadAddress(uint address);
 
-    int writeAddress(uint address);
+    [[nodiscard]] int writeAddress(uint address);
 
-    int snoopMainBus();
+    [[nodiscard]] int snoopMainBus();
 
-    int snoopResponseBus(int current_instruction, uint current_address);
+    [[nodiscard]] int snoopResponseBus(int current_instruction, uint current_address);
 
     //Debug tool
     void dump();
 
     //Statistics
-    long long getCacheMissNumber() const;
+    [[nodiscard]] long long getCacheMissNumber() const;
 
-    long long getCacheHitNumber() const;
+    [[nodiscard]] long long getCacheHitNumber() const;
 
 private:
     vector<list<CacheBlock>> cache;

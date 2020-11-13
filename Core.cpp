@@ -4,18 +4,9 @@
 
 #include "Core.h"
 
-//TODO: pass cache parameters
-
-Core::Core(int core_id, Bus &main_bus, Bus &resp_bus)
-        : l1_cache(Cache(1024, 2, 16, main_bus, resp_bus, core_id)), main_bus(main_bus), response_bus(resp_bus) {
-    this->core_number = core_id;
-
-    fill_instruction_buffer();
-}
-
-Core::Core(int core_id, Bus &main_bus, Bus &resp_bus, string program_name)
-        : l1_cache(Cache(1024, 2, 16, main_bus, resp_bus, core_id)), main_bus(main_bus), response_bus(resp_bus),
-          program(program_name) {
+Core::Core(int core_id, int cache_size, int associativity, int block_size, Bus &main_bus, Bus &resp_bus, string program_name)
+        : l1_cache(Cache(cache_size, associativity, block_size, main_bus, resp_bus, core_id)), main_bus(main_bus), response_bus(resp_bus),
+          program(std::move(program_name)) {
     this->core_number = core_id;
 
     fill_instruction_buffer();
@@ -119,16 +110,14 @@ int Core::prWr(uint address) {
         this->cycles_to_wait += cache_waiting_cycles;
         return 1;
     }
-
-    return 0;
 }
 
-int Core::cacheSnoop() {
+void Core::cacheSnoop() {
     int return_value = l1_cache.snoopMainBus();
-    return 0;
 }
 
 int Core::cacheSnoopResponse() {
+    //Return value is 1 if snooping the response bus was done, not necessary
     if (!snoopingPhaseRequired) {
         return 0;
     }

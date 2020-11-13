@@ -22,7 +22,7 @@ class Core {
 public:
 
     Core(int core_id, int cache_size, int associativity, int block_size, Bus &main_bus, Bus &resp_bus,
-         string program_name);
+         string program_name, string protocol);
 
     int fill_instruction_buffer();
 
@@ -49,6 +49,7 @@ public:
 private:
     int core_number;  //To load the correct file
     string program{"bodytrack"};
+    string protocol{"mesi"};
     bool blocked{0};
     int cycles_to_wait{0};
     bool work_done{0};

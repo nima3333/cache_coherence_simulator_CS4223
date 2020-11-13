@@ -4,11 +4,13 @@
 
 #include "Cache.h"
 
+#include <utility>
+
 //TODO: verify write back / write allocate
 //TODO: verify cache block number, etc
 
-Cache::Cache(int cache_size, int associativity, int block_size, Bus &main_bus, Bus &response_bus_arg, int attached_core)
-        : main_bus(main_bus), response_bus(response_bus_arg) {
+Cache::Cache(int cache_size, int associativity, int block_size, Bus &main_bus, Bus &response_bus_arg, int attached_core, string protocol)
+        : main_bus(main_bus), response_bus(response_bus_arg), protocol(std::move(protocol)) {
     this->cache_size = cache_size;
     this->associativity = associativity;
     this->block_size = block_size;
@@ -16,7 +18,7 @@ Cache::Cache(int cache_size, int associativity, int block_size, Bus &main_bus, B
     initialize_cache(cache_size, associativity, block_size);
     this->N = (int) ceil(log2(block_size / 4));
     this->M = (int) ceil(log2(cache_size / (block_size * associativity)));
-    printf("N = %d, M = %d", N, M);
+    cout << "Protocol : " << this->protocol << " " << "N, M = " << N << " " << M << endl;
 }
 
 int Cache::initialize_cache(int cache_size, int associativity, int block_size) {
@@ -28,11 +30,11 @@ int Cache::initialize_cache(int cache_size, int associativity, int block_size) {
     return 0;
 }
 
+//TODO: in each function, "if mesi / else dragon ..."
 int Cache::loadAddress(uint address) {
     //Tested with one value
     uint tag = address >> (N + M);
     uint index = (address << (32 - N - M)) >> (32 - M);
-
     //Check if exists in cache
     if (cache_content[index].find(tag) != cache_content[index].end()) {  //Present
         putLastUsed(address);

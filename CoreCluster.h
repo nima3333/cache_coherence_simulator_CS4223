@@ -10,7 +10,7 @@
 
 class CoreCluster {
 public:
-    CoreCluster(int nb_cores, const string& program_name, int cache_size, int associativity, int block_size);
+    CoreCluster(int nb_cores, const string& protocol, const string& program_name, int cache_size, int associativity, int block_size);
 
     int nextCycle();
 
@@ -25,6 +25,7 @@ public:
 private:
     int nb_cores{2};
     string program{"bodytrack"};
+    string protocol{"mesi"};
     vector<Core> cores;
     int block_size;
     int cache_size;

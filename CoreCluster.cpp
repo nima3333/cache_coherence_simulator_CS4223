@@ -4,11 +4,11 @@
 
 #include "CoreCluster.h"
 
-CoreCluster::CoreCluster(int nb_cores, const string& program_name, int cache_size, int associativity, int block_size)
+CoreCluster::CoreCluster(int nb_cores, const string& protocol, const string& program_name, int cache_size, int associativity, int block_size)
         : nb_cores(nb_cores), block_size(block_size), cache_size(cache_size), associativity(associativity),
-          main_bus(Bus(block_size)), response_bus(Bus(block_size)) {
+          main_bus(Bus(block_size)), response_bus(Bus(block_size)), protocol(protocol) {
     for (int i = 0; i < nb_cores; i++) {
-        cores.emplace_back(i, cache_size, associativity, block_size, this->main_bus, this->response_bus, program_name);
+        cores.emplace_back(i, cache_size, associativity, block_size, this->main_bus, this->response_bus, program_name, protocol);
     }
 }
 

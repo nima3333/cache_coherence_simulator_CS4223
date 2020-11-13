@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 
     int nb_cores = 4;
 
-    CoreCluster cl = CoreCluster(nb_cores, input_file, cache_size, associativity, block_size);
+    CoreCluster cl = CoreCluster(nb_cores, protocol, input_file, cache_size, associativity, block_size);
 
     int j;
     do {

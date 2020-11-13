@@ -4,13 +4,15 @@
 
 #include "Core.h"
 
-Core::Core(int core_id, int cache_size, int associativity, int block_size, Bus &main_bus, Bus &resp_bus, string program_name)
-        : l1_cache(Cache(cache_size, associativity, block_size, main_bus, resp_bus, core_id)), main_bus(main_bus), response_bus(resp_bus),
-          program(std::move(program_name)) {
-    this->core_number = core_id;
+#include <utility>
 
+Core::Core(int core_id, int cache_size, int associativity, int block_size, Bus &main_bus, Bus &resp_bus, string program_name, string protocol)
+        :  main_bus(main_bus), response_bus(resp_bus), program(std::move(program_name)), protocol(std::move(protocol)),
+        l1_cache(Cache(cache_size, associativity, block_size, main_bus, resp_bus, core_id, protocol)){
+    this->core_number = core_id;
     fill_instruction_buffer();
 }
+
 
 int Core::fill_instruction_buffer() {
     //Get the proper file name, let's assume we do not use C++20

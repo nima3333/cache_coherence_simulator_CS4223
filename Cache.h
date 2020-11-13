@@ -32,9 +32,9 @@ typedef pair<int, uint> Operation;
 typedef bitset<2> State;
 
 
-class Cache {
+class Cache{
 public:
-    Cache(int c_size, int asso, int b_size, Bus &main_bus, Bus &reponse_bus, int attached_core);
+    Cache(int c_size, int asso, int b_size, Bus &main_bus, Bus &reponse_bus, int attached_core, string protocol);
 
     [[nodiscard]] int loadAddress(uint address);
 
@@ -61,7 +61,7 @@ private:
     uint N;
     uint M;
     int nb_cache_blocs;
-
+    string protocol{"mesi"};
     int initialize_cache(int cache_size, int associativity, int block_size);
 
     Bus &main_bus;

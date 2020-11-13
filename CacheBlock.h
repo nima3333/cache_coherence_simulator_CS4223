@@ -9,14 +9,22 @@
 
 using namespace std;
 
-typedef bitset<2> State;
+typedef bitset<3> State;
 typedef unsigned int uint;
 
-/*State in 2 bits
+/*State in 2 bits for MESI
 - 0 : Invalid
 - 1 : Exclusive
 - 2 : Shared
 - 3 : Modified
+ */
+
+/*State in 3 bits for MOESI
+- 0 : Invalid
+- 1 : Exclusive
+- 2 : Shared
+- 3 : Modified
+- 4 : Owned
  */
 
 class CacheBlock {

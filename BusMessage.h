@@ -13,7 +13,8 @@ enum MessageType {
     BusRdX = 2,
     FlushOpt = 3,
     BusUpgr = 4,
-    Flush = 5
+    Flush = 5,
+    BusUpdate = 6
 };
 
 class BusMessage {

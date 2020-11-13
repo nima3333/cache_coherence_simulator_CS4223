@@ -15,7 +15,7 @@ namespace timeConstants {
 namespace protocolNames {
     const string mesi = "mesi";
     const string dragon = "dragon";
-    const string mesif = "mesif";
+    const string moesi = "moesi";
 }
 
 #endif //MULTICORE_CONSTANTS_H

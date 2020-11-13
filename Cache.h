@@ -29,7 +29,7 @@ enum instruction {
     Load = 0, Store = 1, Computation = 2
 };
 typedef pair<int, uint> Operation;
-typedef bitset<2> State;
+typedef bitset<3> State;
 
 
 class Cache{

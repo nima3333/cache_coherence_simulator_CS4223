@@ -41,25 +41,50 @@ int Cache::loadAddress(uint address) {
         putLastUsed(address);
         //Cache hit ? Check state
         State block_state = getCacheBlockState(address);
-        if (block_state == 0) {  //Invalid block, will have to get it
-            //Bus transaction
-            if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
-                return -1;
+        //According to protocols ... FIXME: ugly
+        if (this->protocol == protocolNames::mesi){
+            if (block_state == 0) {  //Invalid block, will have to get it
+                //Bus transaction
+                if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
+                    return -1;
+                }
+                //Register cache miss
+                cache_miss++;
+
+                BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
+                main_bus.setMessage(transaction);
+                return -2;
+            } else {  //Cache Hit
+                //Register cache Hit
+                cache_hit++;
+
+                //Apply LRU rule
+                putLastUsed(address);
+                //Number of cycles to wait
+                return timeConstants::cache_hit;
             }
-            //Register cache miss
-            cache_miss++;
+        }
+        else if (this->protocol==protocolNames::moesi){
+            if (block_state == 0) {  //Invalid block, will have to get it
+                //Bus transaction
+                if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
+                    return -1;
+                }
+                //Register cache miss
+                cache_miss++;
 
-            BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
-            main_bus.setMessage(transaction);
-            return -2;
-        } else {  //Cache Hit
-            //Register cache Hit
-            cache_hit++;
+                BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
+                main_bus.setMessage(transaction);
+                return -2;
+            } else {  //Cache Hit
+                //Register cache Hit
+                cache_hit++;
 
-            //Apply LRU rule
-            putLastUsed(address);
-            //Number of cycles to wait
-            return timeConstants::cache_hit;
+                //Apply LRU rule
+                putLastUsed(address);
+                //Number of cycles to wait
+                return timeConstants::cache_hit;
+            }
         }
     } else { //Not present
         //Bus transaction
@@ -87,67 +112,71 @@ int Cache::snoopMainBus() {
         int inCache = isInCache(address);
         if (inCache) {
             //Get state
-
             int state = (int) getCacheBlockState(address).to_ulong();
-            switch (state) {
-                case 0: //If cache is invalid, do nothing
-                    return 0;
-                case 1: //If cache in Exclusive
 
-                    if (message_type == BusRd) {
-                        BusMessage response = BusMessage(FlushOpt, attached_core, address);
-                        response_bus.setMessageIfEmpty(response);
-                        changeCacheBlockState(address, 2); //Transition to Shared
-                    } else if (message_type == BusRdX) {
-                        BusMessage response = BusMessage(FlushOpt, attached_core, address);
-                        response_bus.setMessageIfEmpty(response);
-                        changeCacheBlockState(address, 0); //Transition to Invalid
-                    }
-                    /* Not necessary, only in share
-                    else if(message_type==BusUpgr){
-                        changeCacheBlockState(address, 0); //Transition to Invalid
-                    }
-                     */
-                    break;
-                case 2: //If cache in Shared
-                    if (message_type == BusRd) {
-                        BusMessage response = BusMessage(FlushOpt, attached_core, address);
-                        response_bus.setMessageIfEmpty(response);
+            //According to protocols ... FIXME: ugly
+            if(this->protocol == protocolNames::mesi){
+                switch (state) {
+                    case 0: //If cache is invalid, do nothing
+                        return 0;
+                    case 1: //If cache in Exclusive
 
-                    } else if (message_type == BusRdX) {
-                        BusMessage response = BusMessage(FlushOpt, attached_core, address);
-                        response_bus.setMessageIfEmpty(response);
+                        if (message_type == BusRd) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            changeCacheBlockState(address, 2); //Transition to Shared
+                        } else if (message_type == BusRdX) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            changeCacheBlockState(address, 0); //Transition to Invalid
+                        }
+                        /* Not necessary, only in share
+                        else if(message_type==BusUpgr){
+                            changeCacheBlockState(address, 0); //Transition to Invalid
+                        }
+                         */
+                        break;
+                    case 2: //If cache in Shared
+                        if (message_type == BusRd) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
 
-                        changeCacheBlockState(address, 0); //Transition to Invalid
-                    } else if (message_type == BusUpgr) {
-                        changeCacheBlockState(address, 0); //Transition to Invalid
-                    }
-                    break;
-                case 3: //If cache in Modified
-                    //FIXME: do we need to take into account cycles when it put data on bus ?? Yes
-                    if (message_type == BusRd) {
-                        BusMessage response = BusMessage(FlushOpt, attached_core, address);
-                        response_bus.setMessageIfEmpty(response);
-                        changeCacheBlockState(address, 2); //Transition to Shared
-                        //In MOSI State, written back to main memory and to cache
-                        return timeConstants::main_memory_fetch;
+                        } else if (message_type == BusRdX) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
 
-                    } else if (message_type == BusRdX) {
-                        BusMessage response = BusMessage(FlushOpt, attached_core, address);
-                        response_bus.setMessageIfEmpty(response);
-                        changeCacheBlockState(address, 0); //Transition to Invalid
-                        //In MOSI State, written back to main memory and to cache
-                        return timeConstants::main_memory_fetch;
-                    }
-                    /* Not necessary, only in share
-                    else if(message_type==BusUpgr){
-                        changeCacheBlockState(address, 0); //Transition to Invalid
-                    }
-                     */
-                    break;
+                            changeCacheBlockState(address, 0); //Transition to Invalid
+                        } else if (message_type == BusUpgr) {
+                            changeCacheBlockState(address, 0); //Transition to Invalid
+                        }
+                        break;
+                    case 3: //If cache in Modified
+                        if (message_type == BusRd) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            changeCacheBlockState(address, 2); //Transition to Shared
+                            //In MESI State, written back to main memory and to cache
+                            return timeConstants::main_memory_fetch;
+
+                        } else if (message_type == BusRdX) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            changeCacheBlockState(address, 0); //Transition to Invalid
+                            //In MESI State, written back to main memory and to cache
+                            return timeConstants::main_memory_fetch;
+                        }
+                        /* Not necessary, only in share
+                        else if(message_type==BusUpgr){
+                            changeCacheBlockState(address, 0); //Transition to Invalid
+                        }
+                         */
+                        break;
+                }
+
             }
-        } else { ;
-        }
+
+
+        } else {;}
     }
 
     return 0;
@@ -155,30 +184,34 @@ int Cache::snoopMainBus() {
 
 int Cache::snoopResponseBus(int current_instruction, uint current_address) {
 
-    //For read operations
-    if (current_instruction == 0) {
-        if (response_bus.isEmpty()) { //Transition to Exclusive
-            int extra_time = changeCacheBlockState(current_address, 1);
-            return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
-        } else {  //Transition to Share
-            BusMessage response = response_bus.getMessage(); //Stub data transfer between cache
-            int extra_time = changeCacheBlockState(current_address, 2);
-            return this->block_size * timeConstants::cache_to_cache + extra_time; //Get from other cache
-        }
+    //According to protocols ... FIXME: ugly
+    if(this->protocol==protocolNames::mesi){
+        //For read operations
+        if (current_instruction == 0) {
+            if (response_bus.isEmpty()) { //Transition to Exclusive
+                int extra_time = changeCacheBlockState(current_address, 1);
+                return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
+            } else {  //Transition to Share
+                BusMessage response = response_bus.getMessage(); //Stub data transfer between cache
+                int extra_time = changeCacheBlockState(current_address, 2);
+                return this->block_size * timeConstants::cache_to_cache + extra_time; //Get from other cache
+            }
 
-    }
-        //For write operations
-    else if (current_instruction == 1) {
-        int extra_time = changeCacheBlockState(current_address, 3);
-        if (response_bus.isEmpty()) {  // fetch from main memory
-            return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
-        } else {  //fetch from cache
-            return this->block_size * timeConstants::cache_to_cache + extra_time; //Get from other cache
         }
-    } else {
-        //Something's wrong
-        throw invalid_argument("load addr pb 2");
+            //For write operations
+        else if (current_instruction == 1) {
+            int extra_time = changeCacheBlockState(current_address, 3);
+            if (response_bus.isEmpty()) {  // fetch from main memory
+                return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
+            } else {  //fetch from cache
+                return this->block_size * timeConstants::cache_to_cache + extra_time; //Get from other cache
+            }
+        } else {
+            //Something's wrong
+            throw invalid_argument("load addr pb 2");
+        }
     }
+    throw invalid_argument("load addr pb 2");
 }
 
 int Cache::writeAddress(uint address) {
@@ -190,41 +223,100 @@ int Cache::writeAddress(uint address) {
         putLastUsed(address);
         //Cache hit ? Check state
         State block_state = getCacheBlockState(address);
+        //According to protocols ... FIXME: ugly
+        if(this->protocol == protocolNames::mesi) {
+            //Check state
+            if (block_state == 1) {  //Exclusive block, just switch to Modified
+                //Register cache Hit
+                cache_hit++;
+                //No bus transaction
+                int extra_time = changeCacheBlockState(address,
+                                                       3);  //Extratime = 0 always here, no eviction in changing state
+                if (extra_time != 0) throw invalid_argument("extra time should be zero");
+                return timeConstants::cache_hit;
+            } else if (block_state == 3) {  //Modified block, nothing to do
+                //Register cache Hit
+                cache_hit++;
+                return timeConstants::cache_hit;
+            } else if (block_state == 2) {  //Shared block
+                if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
+                    return -1;
+                }
+                //Register cache Hit
+                cache_hit++;
+                BusMessage transaction = BusMessage(BusUpgr, this->attached_core, address);
+                main_bus.setMessage(transaction);
+                int extra_time = changeCacheBlockState(address, 3);
+                if (extra_time != 0) throw invalid_argument("extra time should be zero");
+                return timeConstants::cache_hit;
+            } else if (block_state == 0) {  //Invalid block
+                if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
+                    return -1;
+                }
+                //Register cache miss
+                cache_miss++;
+                //Put BusRdX, next steps depend of the other caches
+                BusMessage transaction = BusMessage(BusRdX, this->attached_core, address);
+                main_bus.setMessage(transaction);
+                return -2;
+            }
+        }
+        else if (this->protocol == protocolNames::moesi) {
+            //Check state
+            if (block_state == 1) {  //Exclusive block, just switch to Modified
+                //Register cache Hit
+                cache_hit++;
+                //No bus transaction
+                int extra_time = changeCacheBlockState(address, 3);  //Extratime = 0 always here, no eviction in changing state
+                if (extra_time != 0) throw invalid_argument("extra time should be zero");
+                return timeConstants::cache_hit;
 
-        //Check state
-        if (block_state == 1) {  //Exclusive block, just switch to Modified
-            //Register cache Hit
-            cache_hit++;
-            //No bus transaction
-            int extra_time = changeCacheBlockState(address,
-                                                   3);  //Extratime = 0 always here, no eviction in changing state
-            if (extra_time != 0) throw invalid_argument("extra time should be zero");
-            return timeConstants::cache_hit;
-        } else if (block_state == 3) {  //Modified block, nothing to do
-            //Register cache Hit
-            cache_hit++;
-            return timeConstants::cache_hit;
-        } else if (block_state == 2) {  //Shared block
-            if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
-                return -1;
+            } else if (block_state == 2) {  //Shared block
+                //With MOESI, we can switch to the Owned state and modify it
+                if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
+                    return -1;
+                }
+                //Register cache Hit
+                cache_hit++;
+
+                BusMessage transaction = BusMessage(BusUpdate, this->attached_core, address);
+                main_bus.setMessage(transaction);
+                int extra_time = changeCacheBlockState(address, 4);
+                if (extra_time != 0) throw invalid_argument("extra time should be zero");
+
+                return timeConstants::cache_hit;
+
+            } else if (block_state == 3) {  //Modified block, nothing to do
+                //Register cache Hit
+                cache_hit++;
+
+                return timeConstants::cache_hit;
+
+            } else if (block_state == 4) {  //Owned block, specificity of the MOESI protocol
+                //Have to transfer to other cache blocks that are in share state
+                if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
+                    return -1;
+                }
+                BusMessage transaction = BusMessage(BusUpdate, this->attached_core, address);
+                main_bus.setMessage(transaction);
+
+                //Register cache Hit
+                cache_hit++;
+
+                return timeConstants::cache_hit;
+
+            } else if (block_state == 0) {  //Invalid block
+                if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
+                    return -1;
+                }
+                //Register cache miss
+                cache_miss++;
+                //Put BusRdX, next steps depend of the other caches
+                BusMessage transaction = BusMessage(BusRdX, this->attached_core, address);
+                main_bus.setMessage(transaction);
+                return -2;
             }
-            //Register cache Hit
-            cache_hit++;
-            BusMessage transaction = BusMessage(BusUpgr, this->attached_core, address);
-            main_bus.setMessage(transaction);
-            int extra_time = changeCacheBlockState(address, 3);
-            if (extra_time != 0) throw invalid_argument("extra time should be zero");
-            return timeConstants::cache_hit;
-        } else if (block_state == 0) {  //Invalid block
-            if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
-                return -1;
-            }
-            //Register cache miss
-            cache_miss++;
-            //Put BusRdX, next steps depend of the other caches
-            BusMessage transaction = BusMessage(BusRdX, this->attached_core, address);
-            main_bus.setMessage(transaction);
-            return -2;
+
         }
     } else { //Not present
         if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds

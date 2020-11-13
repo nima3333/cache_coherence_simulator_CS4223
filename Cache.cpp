@@ -76,7 +76,9 @@ int Cache::loadAddress(uint address) {
                 BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
                 main_bus.setMessage(transaction);
                 return -2;
-            } else {  //Cache Hit
+            } else {  //Cache Hit, even in Shared state
+                //In MOESI, even if Owned Line of other is dirty, it updates the other caches (this one included)
+
                 //Register cache Hit
                 cache_hit++;
 
@@ -174,6 +176,87 @@ int Cache::snoopMainBus() {
                 }
 
             }
+            else if(this->protocol == protocolNames::moesi){
+                switch (state) {
+                    case 0: //If cache is invalid, do nothing
+                        return 0;
+                    case 1: //If cache in Exclusive
+
+                        if (message_type == BusRd) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            changeCacheBlockState(address, 2); //Transition to Shared
+                        } else if (message_type == BusRdX) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            changeCacheBlockState(address, 0); //Transition to Invalid
+                        }
+                        /* Not necessary, only in share
+                        else if(message_type==BusUpgr){
+                            changeCacheBlockState(address, 0); //Transition to Invalid
+                        }
+                         */
+                        break;
+                    case 2: //If cache in Shared
+                        if (message_type == BusRd) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+
+                        } else if (message_type == BusRdX) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+
+                            changeCacheBlockState(address, 0); //Transition to Invalid
+                        } else if (message_type == BusUpgr) {
+                            changeCacheBlockState(address, 0); //Transition to Invalid
+                        } else if (message_type == BusUpdate){
+                            //In MOESI, it means the Owned Cache has updated the data, must update here
+                            return timeConstants::cache_to_cache;
+                        }
+                        break;
+                    case 3: //If cache in Modified
+                        //TODO: maybe switch to Owned
+                        if (message_type == BusRd) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            changeCacheBlockState(address, 2); //Transition to Shared
+                            //In MESI State, written back to main memory and to cache
+                            return timeConstants::main_memory_fetch;
+
+                        } else if (message_type == BusRdX) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            changeCacheBlockState(address, 0); //Transition to Invalid
+                            //In MESI State, written back to main memory and to cache
+                            return timeConstants::main_memory_fetch;
+                        }
+
+                        break;
+                    case 4: //If cache in Owned
+                        if (message_type == BusRd) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            //In MESI State, written back to main memory and to cache
+                            return timeConstants::cache_to_cache;
+
+                        } else if (message_type == BusRdX) {
+                            //TODO: MOESI implementation
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            changeCacheBlockState(address, 0); //Transition to Invalid
+                            //In MESI State, written back to main memory and to cache
+                            return timeConstants::main_memory_fetch;
+                        }
+                        /* Not necessary, only in share
+                        else if(message_type==BusUpgr){
+                            changeCacheBlockState(address, 0); //Transition to Invalid
+                        }
+                         */
+                        break;
+
+                }
+
+            }
 
 
         } else {;}
@@ -210,6 +293,9 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address) {
             //Something's wrong
             throw invalid_argument("load addr pb 2");
         }
+    }
+    else if(this->protocol == protocolNames::moesi){
+        //TODO: MOESI implementation
     }
     throw invalid_argument("load addr pb 2");
 }

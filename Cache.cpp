@@ -6,8 +6,8 @@
 
 #include <utility>
 
-//TODO: verify write back / write allocate
-//TODO: verify cache block number, etc
+//TODO: verify write back / write allocate ++++
+//TODO: verify cache block number, etc  +++++
 
 Cache::Cache(int cache_size, int associativity, int block_size, Bus &main_bus, Bus &response_bus_arg, int attached_core, string protocol)
         : main_bus(main_bus), response_bus(response_bus_arg), protocol(std::move(protocol)) {
@@ -15,6 +15,7 @@ Cache::Cache(int cache_size, int associativity, int block_size, Bus &main_bus, B
     this->associativity = associativity;
     this->block_size = block_size;
     this->attached_core = attached_core;
+    this->nb_cache_blocs = cache_size / (block_size * associativity);
     initialize_cache(cache_size, associativity, block_size);
     this->N = (int) ceil(log2(block_size / 4));
     this->M = (int) ceil(log2(cache_size / (block_size * associativity)));
@@ -123,15 +124,20 @@ int Cache::snoopMainBus() {
                     }
                     break;
                 case 3: //If cache in Modified
-                    //FIXME: do we need to take into account cycles when it put data on bus ??
+                    //FIXME: do we need to take into account cycles when it put data on bus ?? Yes
                     if (message_type == BusRd) {
                         BusMessage response = BusMessage(FlushOpt, attached_core, address);
                         response_bus.setMessageIfEmpty(response);
                         changeCacheBlockState(address, 2); //Transition to Shared
+                        //In MOSI State, written back to main memory and to cache
+                        return timeConstants::main_memory_fetch;
+
                     } else if (message_type == BusRdX) {
                         BusMessage response = BusMessage(FlushOpt, attached_core, address);
                         response_bus.setMessageIfEmpty(response);
                         changeCacheBlockState(address, 0); //Transition to Invalid
+                        //In MOSI State, written back to main memory and to cache
+                        return timeConstants::main_memory_fetch;
                     }
                     /* Not necessary, only in share
                     else if(message_type==BusUpgr){

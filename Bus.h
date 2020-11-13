@@ -10,9 +10,9 @@
 
 class Bus {
 public:
-    Bus(int block_size);
+    explicit Bus(int block_size);
 
-    bool isEmpty();
+    [[nodiscard]] bool isEmpty() const;
 
     void setMessage(BusMessage message);
 

@@ -50,9 +50,9 @@ private:
     int core_number;  //To load the correct file
     string program{"bodytrack"};
     string protocol{"mesi"};
-    bool blocked{0};
+    bool blocked{false};
     int cycles_to_wait{0};
-    bool work_done{0};
+    bool work_done{false};
     Bus &main_bus;
     Bus &response_bus;
     queue<Operation> instruction_buffer;

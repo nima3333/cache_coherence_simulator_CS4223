@@ -4,12 +4,12 @@
 
 #include "Bus.h"
 
-bool Bus::isEmpty() {
+bool Bus::isEmpty() const {
     return this->message.type == Void;
 }
 
-void Bus::setMessage(BusMessage message) {
-    this->message = message;
+void Bus::setMessage(BusMessage message_to_set) {
+    this->message = message_to_set;
 
     //For response bus, data traffic only here
     if (message.type == FlushOpt) {
@@ -35,8 +35,8 @@ void Bus::clearBus() {
 Bus::Bus(int block_size) : block_size(block_size) {
 }
 
-void Bus::setMessageIfEmpty(BusMessage message) {
+void Bus::setMessageIfEmpty(BusMessage message_to_set) {
     if (isEmpty()) {
-        this->message = message;
+        this->message = message_to_set;
     }
 }

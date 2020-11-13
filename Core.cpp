@@ -116,6 +116,10 @@ int Core::prWr(uint address) {
 
 void Core::cacheSnoop() {
     int return_value = l1_cache.snoopMainBus();
+    if(return_value>0){
+        this->blocked = true;
+        this->cycles_to_wait += return_value;
+    }
 }
 
 int Core::cacheSnoopResponse() {

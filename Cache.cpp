@@ -65,6 +65,7 @@ int Cache::loadAddress(uint address) {
             }
         }
         else if (this->protocol==protocolNames::moesi){
+            //Same as MESI, as other states than Invalid have a Cache Hit
             if (block_state == 0) {  //Invalid block, will have to get it
                 //Bus transaction
                 if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
@@ -77,8 +78,6 @@ int Cache::loadAddress(uint address) {
                 main_bus.setMessage(transaction);
                 return -2;
             } else {  //Cache Hit, even in Shared state
-                //In MOESI, even if Owned Line of other is dirty, it updates the other caches (this one included)
-
                 //Register cache Hit
                 cache_hit++;
 
@@ -215,13 +214,13 @@ int Cache::snoopMainBus() {
                         }
                         break;
                     case 3: //If cache in Modified
-                        //TODO: maybe switch to Owned
                         if (message_type == BusRd) {
+                            //In MOESI, switch to Owned
                             BusMessage response = BusMessage(FlushOpt, attached_core, address);
                             response_bus.setMessageIfEmpty(response);
-                            changeCacheBlockState(address, 2); //Transition to Shared
-                            //In MESI State, written back to main memory and to cache
-                            return timeConstants::main_memory_fetch;
+                            changeCacheBlockState(address, 4); //Transition to Owned
+                            //In MESI State, written back ONLY to cache
+                            return timeConstants::cache_to_cache;
 
                         } else if (message_type == BusRdX) {
                             BusMessage response = BusMessage(FlushOpt, attached_core, address);
@@ -240,18 +239,14 @@ int Cache::snoopMainBus() {
                             return timeConstants::cache_to_cache;
 
                         } else if (message_type == BusRdX) {
-                            //TODO: MOESI implementation
+                            //I think it's an implementation choice : we transition to Invalid, the BusRdX sender
+                            //Is Modified now, and data written back to memory controller and to Modified cache
                             BusMessage response = BusMessage(FlushOpt, attached_core, address);
                             response_bus.setMessageIfEmpty(response);
                             changeCacheBlockState(address, 0); //Transition to Invalid
                             //In MESI State, written back to main memory and to cache
                             return timeConstants::main_memory_fetch;
                         }
-                        /* Not necessary, only in share
-                        else if(message_type==BusUpgr){
-                            changeCacheBlockState(address, 0); //Transition to Invalid
-                        }
-                         */
                         break;
 
                 }
@@ -295,8 +290,30 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address) {
         }
     }
     else if(this->protocol == protocolNames::moesi){
-        //TODO: MOESI implementation
-    }
+        //For read operations
+        if (current_instruction == 0) {
+            if (response_bus.isEmpty()) { //Transition to Exclusive
+                int extra_time = changeCacheBlockState(current_address, 1);
+                return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
+            } else {  //Transition to Share
+                BusMessage response = response_bus.getMessage(); //Stub data transfer between cache
+                int extra_time = changeCacheBlockState(current_address, 2);
+                return this->block_size * timeConstants::cache_to_cache + extra_time; //Get from other cache
+            }
+
+        }
+        //For write operations
+        else if (current_instruction == 1) {
+            int extra_time = changeCacheBlockState(current_address, 3);
+            if (response_bus.isEmpty()) {  // fetch from main memory
+                return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
+            } else {  //fetch from cache
+                return this->block_size * timeConstants::cache_to_cache + extra_time; //Get from other cache
+            }
+        } else {
+            //Something's wrong
+            throw invalid_argument("load addr pb 2");
+        }    }
     throw invalid_argument("load addr pb 2");
 }
 
@@ -379,13 +396,15 @@ int Cache::writeAddress(uint address) {
                 return timeConstants::cache_hit;
 
             } else if (block_state == 4) {  //Owned block, specificity of the MOESI protocol
-                //Have to transfer to other cache blocks that are in share state
+                //Have to switch to modified and invalid other blocks
                 if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
                     return -1;
                 }
-                BusMessage transaction = BusMessage(BusUpdate, this->attached_core, address);
+                BusMessage transaction = BusMessage(BusUpgr, this->attached_core, address);
                 main_bus.setMessage(transaction);
 
+                int extra_time = changeCacheBlockState(address, 3);  //Extratime = 0 always here, no eviction in changing state
+                if (extra_time != 0) throw invalid_argument("extra time should be zero");
                 //Register cache Hit
                 cache_hit++;
 
@@ -506,8 +525,9 @@ int Cache::addBlock(uint address, State state) {
 int Cache::changeCacheBlockState(uint address, State state) {
     uint tag = address >> (N + M);
     uint index = (address << (32 - N - M)) >> (32 - M);
+
     //Statistics on Shared/Private lines
-    if (state == 2 or state == 1) {  //if block in Exclusive or Share, shared data
+    if (state == 2 or state == 1 or state==4) {  //if block in Exclusive or Share, shared data
         shared_data++;
     } else if (state == 3) { //If block in Modified, private data
         private_data++;

@@ -17,7 +17,7 @@ void Bus::setMessage(BusMessage message_to_set) {
     }
 
     //For main bus, BusRdx is an invalidation
-    if (message.type == BusRdX) {
+    if (message.type == BusRdX or message.type == BusUpgr) {
         invalidations++;
     }
 
@@ -37,6 +37,14 @@ Bus::Bus(int block_size) : block_size(block_size) {
 
 void Bus::setMessageIfEmpty(BusMessage message_to_set) {
     if (isEmpty()) {
-        this->message = message_to_set;
+        setMessage(message_to_set);
     }
+}
+
+void Bus::getStatisticsInvalidations() const{
+    cout << "Bus " << invalidations << endl;
+}
+
+void Bus::getStatisticsDataTraffic() const{
+    cout << "Bus traffic " << data_traffic << endl;
 }

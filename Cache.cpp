@@ -19,7 +19,6 @@ Cache::Cache(int cache_size, int associativity, int block_size, Bus &main_bus, B
     initialize_cache(cache_size, associativity, block_size);
     this->N = (int) ceil(log2(block_size / 4));
     this->M = (int) ceil(log2(cache_size / (block_size * associativity)));
-    cout << "Protocol : " << this->protocol << " " << "N, M = " << N << " " << M << endl;
 }
 
 int Cache::initialize_cache(int cache_size, int associativity, int block_size) {
@@ -568,4 +567,12 @@ long long Cache::getCacheMissNumber() const {
 
 long long Cache::getCacheHitNumber() const {
     return cache_hit;
+}
+
+long long int Cache::getPrivateData() const {
+    return private_data;
+}
+
+long long int Cache::getSharedData() const {
+    return shared_data;
 }

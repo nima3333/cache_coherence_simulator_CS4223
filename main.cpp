@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
         cl.clearBuses();
     } while (j != nb_cores);
 
-    cl.debug();
+    cl.displayStatistics();
 
     return 0;
 }

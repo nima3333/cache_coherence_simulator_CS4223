@@ -21,9 +21,7 @@ int Core::fill_instruction_buffer() {
 
     //Loading the file into a vector
     ifstream myfile(filename);
-    cout << filename << endl;
     if (myfile.is_open()) {
-        cout << "Loading core" << endl;
         string line;
         while (getline(myfile, line)) {
             string line_1 = line.substr(0, line.find(" "));
@@ -35,10 +33,10 @@ int Core::fill_instruction_buffer() {
             instruction_buffer.push(make_pair(operation, argument));
         }
         myfile.close();
-        cout << "Loading achieved" << endl;
+        cout << "Core "<< core_number << " loading achieved" << endl;
         return 1;
     } else {
-        cout << "Unable to open file";
+        cout << "Core "<< core_number << " loading error" << endl;
         return 0;
     }
 }
@@ -155,4 +153,12 @@ long long Core::getCacheMiss() const {
 
 long long Core::getCacheHit() const {
     return l1_cache.getCacheHitNumber();
+}
+
+long long Core::getOverallExecCycles() const{
+    return this->computing_counter + this->store_counter + this->load_counter +  this->idle_counter;
+}
+
+void Core::displayStatistics() {
+    cout << this->core_number << " " << getOverallExecCycles() << " " << this->computing_counter << " " << this->load_counter << " " << this->store_counter << " " << getCacheMissRate() << " " << l1_cache.getPrivateData() << " " << l1_cache.getSharedData() << endl;
 }

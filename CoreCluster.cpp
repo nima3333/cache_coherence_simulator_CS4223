@@ -44,3 +44,11 @@ void CoreCluster::debug() {
     cout << cores[0].getCacheMissRate() << "  " << cores[0].getCacheMiss() << "  " << cores[0].getCacheHit() << endl;
 
 }
+
+void CoreCluster::displayStatistics(){
+    for (int i = 0; i < nb_cores; i++) {
+        cores[i].displayStatistics();
+    }
+    main_bus.getStatisticsInvalidations();
+    response_bus.getStatisticsDataTraffic();
+}

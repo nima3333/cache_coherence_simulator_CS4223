@@ -7,6 +7,9 @@
 
 #include "BusMessage.h"
 #include <cstdlib>
+#include <iostream>
+
+using namespace std;
 
 class Bus {
 public:
@@ -22,12 +25,18 @@ public:
 
     void clearBus();
 
+    void getStatisticsInvalidations() const;
+    void getStatisticsDataTraffic() const;
+
 private:
     BusMessage message;
     long long data_traffic{0};
     long long invalidations{0};
     long long updates{0};
     int block_size;
+
+    long long int getInvalidationRequests() const;
+
 };
 
 #endif //MULTICORE_BUS_H

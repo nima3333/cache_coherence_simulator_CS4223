@@ -92,6 +92,7 @@ public:
 
     long long int getSharedData() const;
 
+    int block_size_words;
 };
 
 #endif //MULTICORE_CACHE_H

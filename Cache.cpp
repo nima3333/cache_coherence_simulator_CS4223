@@ -7,13 +7,13 @@
 #include <utility>
 
 //TODO: verify write back / write allocate ++++
-//TODO: verify cache block number, etc  +++++
 
 Cache::Cache(int cache_size, int associativity, int block_size, Bus &main_bus, Bus &response_bus_arg, int attached_core, string protocol)
         : main_bus(main_bus), response_bus(response_bus_arg), protocol(std::move(protocol)) {
     this->cache_size = cache_size;
     this->associativity = associativity;
     this->block_size = block_size;
+    this->block_size_words = block_size/4;  //Nb of words
     this->attached_core = attached_core;
     this->nb_cache_blocs = cache_size / (block_size * associativity);
     initialize_cache(cache_size, associativity, block_size);
@@ -209,7 +209,7 @@ int Cache::snoopMainBus() {
                             changeCacheBlockState(address, 0); //Transition to Invalid
                         } else if (message_type == BusUpdate){
                             //In MOESI, it means the Owned Cache has updated the data, must update here
-                            return timeConstants::cache_to_cache;
+                            return this->block_size_words * timeConstants::cache_to_cache;
                         }
                         break;
                     case 3: //If cache in Modified
@@ -219,7 +219,7 @@ int Cache::snoopMainBus() {
                             response_bus.setMessageIfEmpty(response);
                             changeCacheBlockState(address, 4); //Transition to Owned
                             //In MESI State, written back ONLY to cache
-                            return timeConstants::cache_to_cache;
+                            return this->block_size_words * timeConstants::cache_to_cache;
 
                         } else if (message_type == BusRdX) {
                             BusMessage response = BusMessage(FlushOpt, attached_core, address);
@@ -235,7 +235,7 @@ int Cache::snoopMainBus() {
                             BusMessage response = BusMessage(FlushOpt, attached_core, address);
                             response_bus.setMessageIfEmpty(response);
                             //In MESI State, written back to main memory and to cache
-                            return timeConstants::cache_to_cache;
+                            return this->block_size_words * timeConstants::cache_to_cache;
 
                         } else if (message_type == BusRdX) {
                             //I think it's an implementation choice : we transition to Invalid, the BusRdX sender
@@ -271,7 +271,7 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address) {
             } else {  //Transition to Share
                 BusMessage response = response_bus.getMessage(); //Stub data transfer between cache
                 int extra_time = changeCacheBlockState(current_address, 2);
-                return this->block_size * timeConstants::cache_to_cache + extra_time; //Get from other cache
+                return this->block_size_words * timeConstants::cache_to_cache + extra_time; //Get from other cache
             }
 
         }
@@ -281,7 +281,7 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address) {
             if (response_bus.isEmpty()) {  // fetch from main memory
                 return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
             } else {  //fetch from cache
-                return this->block_size * timeConstants::cache_to_cache + extra_time; //Get from other cache
+                return this->block_size_words * timeConstants::cache_to_cache + extra_time; //Get from other cache
             }
         } else {
             //Something's wrong
@@ -297,7 +297,7 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address) {
             } else {  //Transition to Share
                 BusMessage response = response_bus.getMessage(); //Stub data transfer between cache
                 int extra_time = changeCacheBlockState(current_address, 2);
-                return this->block_size * timeConstants::cache_to_cache + extra_time; //Get from other cache
+                return this->block_size_words * timeConstants::cache_to_cache + extra_time; //Get from other cache
             }
 
         }
@@ -307,7 +307,7 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address) {
             if (response_bus.isEmpty()) {  // fetch from main memory
                 return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
             } else {  //fetch from cache
-                return this->block_size * timeConstants::cache_to_cache + extra_time; //Get from other cache
+                return this->block_size_words * timeConstants::cache_to_cache + extra_time; //Get from other cache
             }
         } else {
             //Something's wrong

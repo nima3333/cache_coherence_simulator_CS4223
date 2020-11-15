@@ -274,7 +274,7 @@ int Cache::snoopMainBus() {
                             response_bus.setMessageIfEmpty(response);
                             changeCacheBlockState(address, 6);  //Transition to Shared Clean
                             //Update all caches
-                            return this->nb_cache_blocs * this->block_size_words * timeConstants::cache_to_cache;
+                            return this->block_size_words * timeConstants::cache_to_cache;
                         }
                         break;
                     case 6: //If cache in Shared Clean

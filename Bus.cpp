@@ -45,6 +45,7 @@ void Bus::setMessageIfEmpty(BusMessage message_to_set) {
     }
 }
 
+//TODO: merge invalid and updates and display according to procotocol
 void Bus::getStatisticsInvalidations() const{
     cout << "Bus invalid: " << invalidations << endl;
 }

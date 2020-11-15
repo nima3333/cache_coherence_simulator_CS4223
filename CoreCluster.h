@@ -21,6 +21,7 @@ public:
     void clearBuses();
 
     void debug();
+    void displayStatistics();
 
 private:
     int nb_cores{2};
@@ -32,6 +33,7 @@ private:
     int associativity;
     Bus main_bus;
     Bus response_bus;
+
 };
 
 

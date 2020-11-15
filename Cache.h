@@ -87,7 +87,12 @@ private:
     long long cache_hit{0};
     long long private_data{0};
     long long shared_data{0};
+public:
+    long long int getPrivateData() const;
 
+    long long int getSharedData() const;
+
+    int block_size_words;
 };
 
 #endif //MULTICORE_CACHE_H

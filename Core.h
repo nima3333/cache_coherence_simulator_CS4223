@@ -46,6 +46,9 @@ public:
 
     [[nodiscard]] long long int getCacheHit() const;
 
+    void displayStatistics();
+    long long int getOverallExecCycles() const;
+
 private:
     int core_number;  //To load the correct file
     string program{"bodytrack"};

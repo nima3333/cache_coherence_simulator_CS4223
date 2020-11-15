@@ -55,7 +55,7 @@ public:
 private:
     vector<list<CacheBlock>> cache;
     vector<unordered_set<uint>> cache_content;
-    vector<uint> shared_line;
+    vector<CacheBlock> shared_line;
     int cache_size;
     int associativity;
     int block_size;
@@ -79,9 +79,9 @@ private:
 
     int addBlock(uint address, State state);
 
-    void sharedLineRemove(uint address);
+    void sharedLineRemove(CacheBlock cache_block);
 
-    int sharedLineAssertion(uint address);
+    int sharedLineAssertion(CacheBlock cache_block);
 
     State getCacheBlockState(uint address);
 

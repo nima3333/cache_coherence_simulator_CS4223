@@ -86,7 +86,7 @@ int Cache::loadAddress(uint address) {
         }
         //Dragon prRdMiss
         else if (this->protocol == protocolNames::dragon) {
-            int assertion = sharedLineAssertion(address);
+            int assertion = sharedLineAssertion(CacheBlock(0, tag));
             //Cache block is shared, state transitions to Sc
             if (assertion == 1) {
                 changeCacheBlockState(address, 6);
@@ -466,7 +466,7 @@ int Cache::writeAddress(uint address) {
                 return timeConstants::cache_hit;
             } else if (block_state == 5) {  //Shared Modified block
                 cache_hit++;
-                int assertion = sharedLineAssertion(address);
+                int assertion = sharedLineAssertion(CacheBlock(block_state, tag));
                 if (assertion == 0) {       //Sm to M if not asserted, no bus transaction
                     int extra_time = changeCacheBlockState(address, 3);
                     if (extra_time != 0) throw invalid_argument("extra time should be zero");
@@ -484,7 +484,7 @@ int Cache::writeAddress(uint address) {
                 return timeConstants::cache_hit;
             } else if (block_state == 6) {  //Shared Clean block
                 cache_hit++;
-                int assertion = sharedLineAssertion(address);
+                int assertion = sharedLineAssertion(CacheBlock(block_state, tag));
                 if (assertion == 0) {       //Sc to M if not asserted, no bus transaction
                     int extra_time = changeCacheBlockState(address, 3);
                     if (extra_time != 0) throw invalid_argument("extra time should be zero");
@@ -512,7 +512,7 @@ int Cache::writeAddress(uint address) {
             main_bus.setMessage(transaction);
             return -2;
         } else if (this->protocol == protocolNames::dragon) {
-            int assertion = sharedLineAssertion(address);
+            int assertion = sharedLineAssertion(CacheBlock(0, tag));
             //Cache block is shared, state transitions to Sm
             if (assertion == 1) { changeCacheBlockState(address, 5); }
             //Cache block is not shared, state transitions to M
@@ -605,13 +605,13 @@ int Cache::addBlock(uint address, State state) {
         shared_data++;
     } else if (state == 1) {                //If block in Exclusive, shared data
         shared_data++;
-        sharedLineRemove(address);
+        sharedLineRemove(CacheBlock(state, tag));
     } else if (state == 3) {                //If block in Modified, private data
         private_data++;
-        sharedLineRemove(address);
+        sharedLineRemove(CacheBlock(state, tag));
     } else if (state == 6 or state == 5) {  //If block in Sc or Sm, shared data
         shared_data++;
-        shared_line.emplace_back(address);
+        shared_line.emplace_back(state, tag);
     }
     return timeConstants::eviction * block_eviction;
 }
@@ -625,13 +625,13 @@ int Cache::changeCacheBlockState(uint address, State state) {
         shared_data++;
     } else if (state == 1) {                //If block in Exclusive, shared data
         shared_data++;
-        sharedLineRemove(address);
+        sharedLineRemove(CacheBlock(state, tag));
     } else if (state == 3) {                //If block in Modified, private data
         private_data++;
-        sharedLineRemove(address);
+        sharedLineRemove(CacheBlock(state, tag));
     } else if (state == 6 or state == 5) {  //If block in Sc or Sm, shared data
         shared_data++;
-        shared_line.emplace_back(address);
+        shared_line.emplace_back(state, tag);
     }
     //Find corresponding cache block
     bool found = false;
@@ -650,19 +650,19 @@ int Cache::changeCacheBlockState(uint address, State state) {
     }
 }
 
-void Cache::sharedLineRemove(uint address) {
+void Cache::sharedLineRemove(CacheBlock cache_block) {
     for(auto iter = shared_line.begin(); iter != shared_line.end(); ++iter ) {
-        if( *iter == address ) {
+        if( *iter == cache_block ) {
             shared_line.erase( iter );
             break;
         }
     }
 }
 
-int Cache::sharedLineAssertion(uint address) {
+int Cache::sharedLineAssertion(CacheBlock cache_block) {
     int assertion = 0;
     for(auto iter = shared_line.begin(); iter != shared_line.end(); ++iter ) {
-        if( *iter == address ) {
+        if( *iter == cache_block ) {
             assertion = 1;
             break;
         }

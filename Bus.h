@@ -25,9 +25,8 @@ public:
 
     void clearBus();
 
-    void getStatisticsInvalidations() const;
+    void getStatisticsInvalidationsUpdates(string protocol) const;
     void getStatisticsDataTraffic() const;
-    void getStatisticsUpdates() const;
 
 private:
     BusMessage message;

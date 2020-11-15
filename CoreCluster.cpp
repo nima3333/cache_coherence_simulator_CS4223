@@ -45,7 +45,7 @@ void CoreCluster::debug() {
 
 }
 
-void CoreCluster::displayStatistics(){
+void CoreCluster::displayStatistics(string protocol){
     long long exec1 = 0;
     for (int i = 0; i < nb_cores; i++) {
         exec1 = max(cores[i].getOverallExecCycles(), exec1);
@@ -55,7 +55,6 @@ void CoreCluster::displayStatistics(){
     for (int i = 0; i < nb_cores; i++) {
         cores[i].displayStatistics();
     }
-    main_bus.getStatisticsInvalidations();
-    main_bus.getStatisticsUpdates();
+    main_bus.getStatisticsInvalidationsUpdates(protocol);
     response_bus.getStatisticsDataTraffic();
 }

@@ -21,7 +21,7 @@ public:
     void clearBuses();
 
     void debug();
-    void displayStatistics();
+    void displayStatistics(string protocol);
 
 private:
     int nb_cores{2};

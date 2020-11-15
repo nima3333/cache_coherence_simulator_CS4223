@@ -23,8 +23,8 @@ void Bus::setMessage(BusMessage message_to_set) {
     }
 
     if (message.type == BusUpdate) {
-        updates = timeConstants::cache_to_cache * (block_size / 4);
-        data_traffic += updates;
+        updates++;
+        data_traffic += timeConstants::cache_to_cache * (block_size / 4);
     }
 }
 
@@ -45,15 +45,16 @@ void Bus::setMessageIfEmpty(BusMessage message_to_set) {
     }
 }
 
-//TODO: merge invalid and updates and display according to procotocol
-void Bus::getStatisticsInvalidations() const{
-    cout << "Bus invalid: " << invalidations << endl;
+void Bus::getStatisticsInvalidationsUpdates(string protocol) const{
+    cout << "Bus invalid/update: ";
+    if (protocol == protocolNames::mesi) {
+        cout << invalidations << endl;
+    }
+    else if (protocol == protocolNames::dragon) {
+        cout << updates << endl;
+    }
 }
 
 void Bus::getStatisticsDataTraffic() const{
     cout << "Bus traffic: " << data_traffic << endl;
-}
-
-void Bus::getStatisticsUpdates() const{
-    cout << "Bus updates: " << updates << endl;
 }

@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
         cl.clearBuses();
     } while (j != nb_cores);
 
-    cl.displayStatistics();
+    cl.displayStatistics(protocol);
 
     return 0;
 }

@@ -72,24 +72,32 @@ int Cache::loadAddress(uint address) {
             return timeConstants::cache_hit;
         }
     } else { //Not present
-        //Bus transaction
-        if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
-            return -1;
+        if (this->protocol == protocolNames::moesi || this->protocol == protocolNames::mesi) {
+            //Bus transaction
+            if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
+                return -1;
+            }
+            //Register cache miss
+            cache_miss++;
+            BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
+            main_bus.setMessage(transaction);
+            //TODO: doc for better readability
+            return -2;
         }
-        //Register cache miss
-        cache_miss++;
-        BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
-        main_bus.setMessage(transaction);
         //Dragon prRdMiss
-        if (this->protocol == protocolNames::dragon) {
+        else if (this->protocol == protocolNames::dragon) {
             int assertion = sharedLineAssertion(address);
             //Cache block is shared, state transitions to Sc
-            if (assertion == 1) { changeCacheBlockState(address, 6); }
+            if (assertion == 1) {
+                changeCacheBlockState(address, 6);
+                return timeConstants::cache_to_cache * block_size_words;
+            }
             //Cache block is not shared, state transitions to E
-            else if (assertion == 0) { changeCacheBlockState(address, 1); }
+            else if (assertion == 0) {
+                changeCacheBlockState(address, 1);
+                return timeConstants::main_memory_fetch;
+            }
         }
-        //TODO: doc for better readability
-        return -2;
     }
     return 0;
 }
@@ -107,7 +115,7 @@ int Cache::snoopMainBus() {
             //Get state
             int state = (int) getCacheBlockState(address).to_ulong();
 
-            //According to protocols ... FIXME: ugly
+            //According to protocols ...
             if(this->protocol == protocolNames::mesi){
                 switch (state) {
                     case 0: //If cache is invalid, do nothing
@@ -291,7 +299,7 @@ int Cache::snoopMainBus() {
 
 int Cache::snoopResponseBus(int current_instruction, uint current_address) {
 
-    //According to protocols ... FIXME: ugly
+    //According to protocols ...
     if(this->protocol==protocolNames::mesi){
         //For read operations
         if (current_instruction == 0) {
@@ -377,7 +385,7 @@ int Cache::writeAddress(uint address) {
         putLastUsed(address);
         //Cache hit ? Check state
         State block_state = getCacheBlockState(address);
-        //According to protocols ... FIXME: ugly
+        //According to protocols ...
         if(this->protocol == protocolNames::mesi) {
             //Check state
             if (block_state == 1) {  //Exclusive block, just switch to Modified
@@ -479,7 +487,7 @@ int Cache::writeAddress(uint address) {
                 //No bus transaction
                 //Extratime = 0 always here, no eviction in changing state
                 int extra_time = changeCacheBlockState(address,3);
-                if (extra_time != 0) throw invalid_argument("extra time should be zero");
+                        if (extra_time != 0) throw invalid_argument("extra time should be zero");
                 return timeConstants::cache_hit;
             } else if (block_state == 5) {  //Shared Modified block
                 cache_hit++;
@@ -488,9 +496,17 @@ int Cache::writeAddress(uint address) {
                     int extra_time = changeCacheBlockState(address, 3);
                     if (extra_time != 0) throw invalid_argument("extra time should be zero");
                 } else if (assertion == 1) {//No state change if asserted, BusUpd
+                    if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
+                        return -1;
+                    }
                     BusMessage transaction = BusMessage(BusUpdate, this->attached_core, address);
                     main_bus.setMessage(transaction);
                 }
+                return timeConstants::cache_hit;
+
+            }  else if (block_state == 3) {  //Modified block
+                cache_hit++;
+                return timeConstants::cache_hit;
             } else if (block_state == 6) {  //Shared Clean block
                 cache_hit++;
                 int assertion = sharedLineAssertion(address);
@@ -498,30 +514,36 @@ int Cache::writeAddress(uint address) {
                     int extra_time = changeCacheBlockState(address, 3);
                     if (extra_time != 0) throw invalid_argument("extra time should be zero");
                 } else if (assertion == 1) {//Sc to Sm if asserted, BusUpd
+                    if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
+                        return -1;
+                    }
                     BusMessage transaction = BusMessage(BusUpdate, this->attached_core, address);
                     main_bus.setMessage(transaction);
                     changeCacheBlockState(address, 5);
                 }
+                return timeConstants::cache_hit;
             }
         }
     } else { //Not present
-        if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
-            return -1;
-        }
         //Register cache miss
         cache_miss++;
         if (this->protocol == protocolNames::mesi || this->protocol == protocolNames::moesi) {
+            if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
+                return -1;
+            }
             //Put BusRdX, next steps depend of the other caches
             BusMessage transaction = BusMessage(BusRdX, this->attached_core, address);
             main_bus.setMessage(transaction);
+            return -2;
         } else if (this->protocol == protocolNames::dragon) {
             int assertion = sharedLineAssertion(address);
             //Cache block is shared, state transitions to Sm
             if (assertion == 1) { changeCacheBlockState(address, 5); }
             //Cache block is not shared, state transitions to M
             else if (assertion == 0) { changeCacheBlockState(address, 3); }
+            return timeConstants::main_memory_fetch;
         }
-        return -2;
+
     }
     return 0;
 }

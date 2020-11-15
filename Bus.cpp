@@ -47,7 +47,7 @@ void Bus::setMessageIfEmpty(BusMessage message_to_set) {
 
 void Bus::getStatisticsInvalidationsUpdates(string protocol) const{
     cout << "Bus invalid/update: ";
-    if (protocol == protocolNames::mesi) {
+    if (protocol == protocolNames::mesi or protocol == protocolNames::moesi) {
         cout << invalidations << endl;
     }
     else if (protocol == protocolNames::dragon) {

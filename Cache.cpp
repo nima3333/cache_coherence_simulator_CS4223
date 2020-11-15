@@ -56,18 +56,12 @@ int Cache::loadAddress(uint address) {
             } else {  //Cache Hit
                 //Register cache Hit
                 cache_hit++;
-
-                //Apply LRU rule
-                putLastUsed(address);
                 //Number of cycles to wait
                 return timeConstants::cache_hit;
             }
         } else if (this->protocol == protocolNames::dragon) {   //Present=hit, absent=invalid
             //Register cache Hit
             cache_hit++;
-
-            //Apply LRU rule
-            putLastUsed(address);
             //Number of cycles to wait
             return timeConstants::cache_hit;
         }
@@ -582,7 +576,20 @@ int Cache::putLastUsed(uint address) {
 
     //Re-Insertion
     cache[index].push_back(hit);
-
+    State state = hit.state;
+    //Statistics on Shared/Private lines
+    if (state == 2 or state==4) {           //If block in Share, shared data
+        shared_data++;
+    } else if (state == 1) {                //If block in Exclusive, shared data
+        shared_data++;
+        sharedLineRemove(CacheBlock(state, tag));
+    } else if (state == 3) {                //If block in Modified, private data
+        private_data++;
+        sharedLineRemove(CacheBlock(state, tag));
+    } else if (state == 6 or state == 5) {  //If block in Sc or Sm, shared data
+        shared_data++;
+        shared_line.emplace_back(state, tag);
+    }
     return 0;
 }
 
@@ -601,7 +608,7 @@ int Cache::addBlock(uint address, State state) {
     cache[index].emplace_back(state, tag);
     cache_content[index].emplace(tag);
     //Statistics on Shared/Private lines
-    if (state == 2) {                       //If block in Share, shared data
+    if (state == 2 or state==4) {                       //If block in Share, shared data
         shared_data++;
     } else if (state == 1) {                //If block in Exclusive, shared data
         shared_data++;
@@ -620,19 +627,7 @@ int Cache::changeCacheBlockState(uint address, State state) {
     uint tag = address >> (N + M);
     uint index = (address << (32 - N - M)) >> (32 - M);
 
-    //Statistics on Shared/Private lines
-    if (state == 2 or state==4) {           //If block in Share, shared data
-        shared_data++;
-    } else if (state == 1) {                //If block in Exclusive, shared data
-        shared_data++;
-        sharedLineRemove(CacheBlock(state, tag));
-    } else if (state == 3) {                //If block in Modified, private data
-        private_data++;
-        sharedLineRemove(CacheBlock(state, tag));
-    } else if (state == 6 or state == 5) {  //If block in Sc or Sm, shared data
-        shared_data++;
-        shared_line.emplace_back(state, tag);
-    }
+
     //Find corresponding cache block
     bool found = false;
     for (CacheBlock &it : cache[index]) {

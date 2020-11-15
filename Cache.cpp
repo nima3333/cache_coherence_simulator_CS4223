@@ -348,32 +348,7 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address) {
             //Something's wrong
             throw invalid_argument("load addr pb 2");
         }
-    } else if (this->protocol == protocolNames::dragon) {
-        //For read operations
-        if (current_instruction == 0) {
-            if (response_bus.isEmpty()) {                               //Transition to Exclusive
-                int extra_time = changeCacheBlockState(current_address, 1);
-                return timeConstants::main_memory_fetch + extra_time;   //Get from main memory
-            } else {                                                    //Transition to Shared Clean
-                BusMessage response = response_bus.getMessage();        //Stub data transfer between cache
-                int extra_time = changeCacheBlockState(current_address, 6);
-                return this->block_size_words * timeConstants::cache_to_cache + extra_time; //Get from other cache
-            }
-        }
-        //For write operations
-        else if (current_instruction == 1) {
-            int extra_time = changeCacheBlockState(current_address, 3);
-            if (response_bus.isEmpty()) {                               // fetch from main memory
-                return timeConstants::main_memory_fetch + extra_time;   //Get from main memory
-            } else {                                                    //fetch from cache
-                return this->block_size_words * timeConstants::cache_to_cache + extra_time; //Get from other cache
-            }
-        } else {
-            //Something's wrong
-            throw invalid_argument("load addr pb 2");
-        }
     }
-//    throw invalid_argument("load addr pb 2");
 }
 
 int Cache::writeAddress(uint address) {
@@ -495,15 +470,15 @@ int Cache::writeAddress(uint address) {
                 if (assertion == 0) {       //Sm to M if not asserted, no bus transaction
                     int extra_time = changeCacheBlockState(address, 3);
                     if (extra_time != 0) throw invalid_argument("extra time should be zero");
+                    return timeConstants::cache_hit;
                 } else if (assertion == 1) {//No state change if asserted, BusUpd
                     if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
                         return -1;
                     }
                     BusMessage transaction = BusMessage(BusUpdate, this->attached_core, address);
                     main_bus.setMessage(transaction);
+                    return timeConstants::cache_to_cache * block_size_words;
                 }
-                return timeConstants::cache_hit;
-
             }  else if (block_state == 3) {  //Modified block
                 cache_hit++;
                 return timeConstants::cache_hit;
@@ -513,6 +488,7 @@ int Cache::writeAddress(uint address) {
                 if (assertion == 0) {       //Sc to M if not asserted, no bus transaction
                     int extra_time = changeCacheBlockState(address, 3);
                     if (extra_time != 0) throw invalid_argument("extra time should be zero");
+                    return timeConstants::cache_hit;
                 } else if (assertion == 1) {//Sc to Sm if asserted, BusUpd
                     if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
                         return -1;
@@ -520,8 +496,8 @@ int Cache::writeAddress(uint address) {
                     BusMessage transaction = BusMessage(BusUpdate, this->attached_core, address);
                     main_bus.setMessage(transaction);
                     changeCacheBlockState(address, 5);
+                    return timeConstants::cache_to_cache * block_size_words;
                 }
-                return timeConstants::cache_hit;
             }
         }
     } else { //Not present

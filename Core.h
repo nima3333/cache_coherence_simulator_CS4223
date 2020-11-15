@@ -47,6 +47,7 @@ public:
     [[nodiscard]] long long int getCacheHit() const;
 
     void displayStatistics();
+    long long int getOverallExecCycles() const;
 
 private:
     int core_number;  //To load the correct file
@@ -65,7 +66,6 @@ private:
     long long computing_counter{0};
     long long idle_counter{0};
 
-    long long int getOverallExecCycles() const;
 };
 
 

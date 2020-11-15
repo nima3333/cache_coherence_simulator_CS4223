@@ -46,6 +46,12 @@ void CoreCluster::debug() {
 }
 
 void CoreCluster::displayStatistics(){
+    long long exec1 = 0;
+    for (int i = 0; i < nb_cores; i++) {
+        exec1 = max(cores[i].getOverallExecCycles(), exec1);
+    }
+    cout << "Overall execution cycles = " << exec1 << endl;
+    cout << "Core Execution Compute Load Store MissRate Private Shared" << endl;
     for (int i = 0; i < nb_cores; i++) {
         cores[i].displayStatistics();
     }

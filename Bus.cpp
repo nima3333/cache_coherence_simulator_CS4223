@@ -42,9 +42,10 @@ void Bus::setMessageIfEmpty(BusMessage message_to_set) {
 }
 
 void Bus::getStatisticsInvalidations() const{
-    cout << "Bus " << invalidations << endl;
+    //TODO: updates !!
+    cout << "Bus invalid/updates : " << invalidations << endl;
 }
 
 void Bus::getStatisticsDataTraffic() const{
-    cout << "Bus traffic " << data_traffic << endl;
+    cout << "Bus traffic : " << data_traffic << endl;
 }

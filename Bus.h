@@ -27,6 +27,7 @@ public:
 
     void getStatisticsInvalidations() const;
     void getStatisticsDataTraffic() const;
+    void getStatisticsUpdates() const;
 
 private:
     BusMessage message;

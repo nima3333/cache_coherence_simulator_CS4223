@@ -3,6 +3,7 @@
 //
 
 #include "Bus.h"
+#include "constants.h"
 
 bool Bus::isEmpty() const {
     return this->message.type == Void;
@@ -21,7 +22,10 @@ void Bus::setMessage(BusMessage message_to_set) {
         invalidations++;
     }
 
-    //TODO: updates for Dragon
+    if (message.type == BusUpdate) {
+        updates = timeConstants::cache_to_cache * (block_size / 4);
+        data_traffic += updates;
+    }
 }
 
 BusMessage Bus::getMessage() {
@@ -42,10 +46,13 @@ void Bus::setMessageIfEmpty(BusMessage message_to_set) {
 }
 
 void Bus::getStatisticsInvalidations() const{
-    //TODO: updates !!
-    cout << "Bus invalid/updates : " << invalidations << endl;
+    cout << "Bus invalid: " << invalidations << endl;
 }
 
 void Bus::getStatisticsDataTraffic() const{
-    cout << "Bus traffic : " << data_traffic << endl;
+    cout << "Bus traffic: " << data_traffic << endl;
+}
+
+void Bus::getStatisticsUpdates() const{
+    cout << "Bus updates: " << updates << endl;
 }

@@ -56,5 +56,6 @@ void CoreCluster::displayStatistics(){
         cores[i].displayStatistics();
     }
     main_bus.getStatisticsInvalidations();
+    main_bus.getStatisticsUpdates();
     response_bus.getStatisticsDataTraffic();
 }

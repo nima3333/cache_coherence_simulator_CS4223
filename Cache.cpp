@@ -30,7 +30,6 @@ int Cache::initialize_cache(int cache_size, int associativity, int block_size) {
     return 0;
 }
 
-//TODO: in each function, "if mesi / else dragon ..."
 int Cache::loadAddress(uint address) {
     //Tested with one value
     uint tag = address >> (N + M);
@@ -41,7 +40,8 @@ int Cache::loadAddress(uint address) {
         //Cache hit ? Check state
         State block_state = getCacheBlockState(address);
         //According to protocols ... FIXME: ugly
-        if (this->protocol == protocolNames::mesi){
+        //Same for MESI and MOESI, as other states than Invalid have a Cache Hit
+        if (this->protocol == protocolNames::mesi || this->protocol == protocolNames::moesi) {
             if (block_state == 0) {  //Invalid block, will have to get it
                 //Bus transaction
                 if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
@@ -62,29 +62,14 @@ int Cache::loadAddress(uint address) {
                 //Number of cycles to wait
                 return timeConstants::cache_hit;
             }
-        }
-        else if (this->protocol==protocolNames::moesi){
-            //Same as MESI, as other states than Invalid have a Cache Hit
-            if (block_state == 0) {  //Invalid block, will have to get it
-                //Bus transaction
-                if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
-                    return -1;
-                }
-                //Register cache miss
-                cache_miss++;
+        } else if (this->protocol == protocolNames::dragon) {   //Present=hit, absent=invalid
+            //Register cache Hit
+            cache_hit++;
 
-                BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
-                main_bus.setMessage(transaction);
-                return -2;
-            } else {  //Cache Hit, even in Shared state
-                //Register cache Hit
-                cache_hit++;
-
-                //Apply LRU rule
-                putLastUsed(address);
-                //Number of cycles to wait
-                return timeConstants::cache_hit;
-            }
+            //Apply LRU rule
+            putLastUsed(address);
+            //Number of cycles to wait
+            return timeConstants::cache_hit;
         }
     } else { //Not present
         //Bus transaction
@@ -95,6 +80,14 @@ int Cache::loadAddress(uint address) {
         cache_miss++;
         BusMessage transaction = BusMessage(BusRd, this->attached_core, address);
         main_bus.setMessage(transaction);
+        //Dragon prRdMiss
+        if (this->protocol == protocolNames::dragon) {
+            int assertion = sharedLineAssertion(address);
+            //Cache block is shared, state transitions to Sc
+            if (assertion == 1) { changeCacheBlockState(address, 6); }
+            //Cache block is not shared, state transitions to E
+            else if (assertion == 0) { changeCacheBlockState(address, 1); }
+        }
         //TODO: doc for better readability
         return -2;
     }
@@ -172,9 +165,7 @@ int Cache::snoopMainBus() {
                          */
                         break;
                 }
-
-            }
-            else if(this->protocol == protocolNames::moesi){
+            } else if(this->protocol == protocolNames::moesi){
                 switch (state) {
                     case 0: //If cache is invalid, do nothing
                         return 0;
@@ -247,15 +238,54 @@ int Cache::snoopMainBus() {
                             return timeConstants::main_memory_fetch;
                         }
                         break;
-
                 }
-
+            } else if (this->protocol == protocolNames::dragon) {
+                switch (state) {
+                    case 1: //If cache in Exclusive
+                        if (message_type == BusRd) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            changeCacheBlockState(address, 6); //Transition to Shared clean
+                        }
+                        break;
+                    case 3: //If cache in Modified
+                        if (message_type == BusRd) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            changeCacheBlockState(address, 5);  //Transition to Shared Modified
+                            return timeConstants::main_memory_fetch;  //Update main memory
+                        }
+                        break;
+                    case 5: //If cache in Shared Modified
+                        if (message_type == BusRd) {
+                            BusMessage response = BusMessage(FlushOpt, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            return timeConstants::main_memory_fetch;  //Update main memory, no state transition
+                        } else if (message_type == BusUpdate) {
+                            BusMessage response = BusMessage(BusUpdate, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            changeCacheBlockState(address, 6);  //Transition to Shared Clean
+                            //Update all caches
+                            return this->nb_cache_blocs * this->block_size_words * timeConstants::cache_to_cache;
+                        }
+                        break;
+                    case 6: //If cache in Shared Clean
+                        //No state transition with BusRd and BusUpdate
+                        if (message_type == BusRd) {
+                            BusMessage response = BusMessage(BusRd, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                        } else if (message_type == BusUpdate) {
+                            BusMessage response = BusMessage(BusUpdate, attached_core, address);
+                            response_bus.setMessageIfEmpty(response);
+                            return this->block_size_words * timeConstants::cache_to_cache;
+                        }
+                        break;
+                    default:
+                        cout << "Error: cache absent." << endl;
+                }
             }
-
-
         } else {;}
     }
-
     return 0;
 }
 
@@ -273,33 +303,6 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address) {
                 int extra_time = changeCacheBlockState(current_address, 2);
                 return this->block_size_words * timeConstants::cache_to_cache + extra_time; //Get from other cache
             }
-
-        }
-            //For write operations
-        else if (current_instruction == 1) {
-            int extra_time = changeCacheBlockState(current_address, 3);
-            if (response_bus.isEmpty()) {  // fetch from main memory
-                return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
-            } else {  //fetch from cache
-                return this->block_size_words * timeConstants::cache_to_cache + extra_time; //Get from other cache
-            }
-        } else {
-            //Something's wrong
-            throw invalid_argument("load addr pb 2");
-        }
-    }
-    else if(this->protocol == protocolNames::moesi){
-        //For read operations
-        if (current_instruction == 0) {
-            if (response_bus.isEmpty()) { //Transition to Exclusive
-                int extra_time = changeCacheBlockState(current_address, 1);
-                return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
-            } else {  //Transition to Share
-                BusMessage response = response_bus.getMessage(); //Stub data transfer between cache
-                int extra_time = changeCacheBlockState(current_address, 2);
-                return this->block_size_words * timeConstants::cache_to_cache + extra_time; //Get from other cache
-            }
-
         }
         //For write operations
         else if (current_instruction == 1) {
@@ -312,8 +315,57 @@ int Cache::snoopResponseBus(int current_instruction, uint current_address) {
         } else {
             //Something's wrong
             throw invalid_argument("load addr pb 2");
-        }    }
-    throw invalid_argument("load addr pb 2");
+        }
+    } else if(this->protocol == protocolNames::moesi){
+        //For read operations
+        if (current_instruction == 0) {
+            if (response_bus.isEmpty()) { //Transition to Exclusive
+                int extra_time = changeCacheBlockState(current_address, 1);
+                return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
+            } else {  //Transition to Share
+                BusMessage response = response_bus.getMessage(); //Stub data transfer between cache
+                int extra_time = changeCacheBlockState(current_address, 2);
+                return this->block_size_words * timeConstants::cache_to_cache + extra_time; //Get from other cache
+            }
+        }
+        //For write operations
+        else if (current_instruction == 1) {
+            int extra_time = changeCacheBlockState(current_address, 3);
+            if (response_bus.isEmpty()) {  // fetch from main memory
+                return timeConstants::main_memory_fetch + extra_time;  //Get from main memory
+            } else {  //fetch from cache
+                return this->block_size_words * timeConstants::cache_to_cache + extra_time; //Get from other cache
+            }
+        } else {
+            //Something's wrong
+            throw invalid_argument("load addr pb 2");
+        }
+    } else if (this->protocol == protocolNames::dragon) {
+        //For read operations
+        if (current_instruction == 0) {
+            if (response_bus.isEmpty()) {                               //Transition to Exclusive
+                int extra_time = changeCacheBlockState(current_address, 1);
+                return timeConstants::main_memory_fetch + extra_time;   //Get from main memory
+            } else {                                                    //Transition to Shared Clean
+                BusMessage response = response_bus.getMessage();        //Stub data transfer between cache
+                int extra_time = changeCacheBlockState(current_address, 6);
+                return this->block_size_words * timeConstants::cache_to_cache + extra_time; //Get from other cache
+            }
+        }
+        //For write operations
+        else if (current_instruction == 1) {
+            int extra_time = changeCacheBlockState(current_address, 3);
+            if (response_bus.isEmpty()) {                               // fetch from main memory
+                return timeConstants::main_memory_fetch + extra_time;   //Get from main memory
+            } else {                                                    //fetch from cache
+                return this->block_size_words * timeConstants::cache_to_cache + extra_time; //Get from other cache
+            }
+        } else {
+            //Something's wrong
+            throw invalid_argument("load addr pb 2");
+        }
+    }
+//    throw invalid_argument("load addr pb 2");
 }
 
 int Cache::writeAddress(uint address) {
@@ -362,8 +414,7 @@ int Cache::writeAddress(uint address) {
                 main_bus.setMessage(transaction);
                 return -2;
             }
-        }
-        else if (this->protocol == protocolNames::moesi) {
+        } else if (this->protocol == protocolNames::moesi) {
             //Check state
             if (block_state == 1) {  //Exclusive block, just switch to Modified
                 //Register cache Hit
@@ -421,6 +472,37 @@ int Cache::writeAddress(uint address) {
                 return -2;
             }
 
+        } else if (this->protocol == protocolNames::dragon) {
+            if (block_state == 1) {  //Exclusive block, just switch to Modified
+                //Register cache Hit
+                cache_hit++;
+                //No bus transaction
+                //Extratime = 0 always here, no eviction in changing state
+                int extra_time = changeCacheBlockState(address,3);
+                if (extra_time != 0) throw invalid_argument("extra time should be zero");
+                return timeConstants::cache_hit;
+            } else if (block_state == 5) {  //Shared Modified block
+                cache_hit++;
+                int assertion = sharedLineAssertion(address);
+                if (assertion == 0) {       //Sm to M if not asserted, no bus transaction
+                    int extra_time = changeCacheBlockState(address, 3);
+                    if (extra_time != 0) throw invalid_argument("extra time should be zero");
+                } else if (assertion == 1) {//No state change if asserted, BusUpd
+                    BusMessage transaction = BusMessage(BusUpdate, this->attached_core, address);
+                    main_bus.setMessage(transaction);
+                }
+            } else if (block_state == 6) {  //Shared Clean block
+                cache_hit++;
+                int assertion = sharedLineAssertion(address);
+                if (assertion == 0) {       //Sc to M if not asserted, no bus transaction
+                    int extra_time = changeCacheBlockState(address, 3);
+                    if (extra_time != 0) throw invalid_argument("extra time should be zero");
+                } else if (assertion == 1) {//Sc to Sm if asserted, BusUpd
+                    BusMessage transaction = BusMessage(BusUpdate, this->attached_core, address);
+                    main_bus.setMessage(transaction);
+                    changeCacheBlockState(address, 5);
+                }
+            }
         }
     } else { //Not present
         if (!main_bus.isEmpty()) {  //Bus occupied, cannot proceeds
@@ -428,9 +510,17 @@ int Cache::writeAddress(uint address) {
         }
         //Register cache miss
         cache_miss++;
-        //Put BusRdX, next steps depend of the other caches
-        BusMessage transaction = BusMessage(BusRdX, this->attached_core, address);
-        main_bus.setMessage(transaction);
+        if (this->protocol == protocolNames::mesi || this->protocol == protocolNames::moesi) {
+            //Put BusRdX, next steps depend of the other caches
+            BusMessage transaction = BusMessage(BusRdX, this->attached_core, address);
+            main_bus.setMessage(transaction);
+        } else if (this->protocol == protocolNames::dragon) {
+            int assertion = sharedLineAssertion(address);
+            //Cache block is shared, state transitions to Sm
+            if (assertion == 1) { changeCacheBlockState(address, 5); }
+            //Cache block is not shared, state transitions to M
+            else if (assertion == 0) { changeCacheBlockState(address, 3); }
+        }
         return -2;
     }
     return 0;
@@ -513,10 +603,17 @@ int Cache::addBlock(uint address, State state) {
     cache[index].emplace_back(state, tag);
     cache_content[index].emplace(tag);
     //Statistics on Shared/Private lines
-    if (state == 2 or state == 1) {  //if block in Exclusive or Share, shared data
+    if (state == 2) {                       //If block in Share, shared data
         shared_data++;
-    } else if (state == 3) { //If block in Modified, private data
+    } else if (state == 1) {                //If block in Exclusive, shared data
+        shared_data++;
+        sharedLineRemove(address);
+    } else if (state == 3) {                //If block in Modified, private data
         private_data++;
+        sharedLineRemove(address);
+    } else if (state == 6 or state == 5) {  //If block in Sc or Sm, shared data
+        shared_data++;
+        shared_line.emplace_back(address);
     }
     return timeConstants::eviction * block_eviction;
 }
@@ -526,10 +623,17 @@ int Cache::changeCacheBlockState(uint address, State state) {
     uint index = (address << (32 - N - M)) >> (32 - M);
 
     //Statistics on Shared/Private lines
-    if (state == 2 or state == 1 or state==4) {  //if block in Exclusive or Share, shared data
+    if (state == 2 or state==4) {           //If block in Share, shared data
         shared_data++;
-    } else if (state == 3) { //If block in Modified, private data
+    } else if (state == 1) {                //If block in Exclusive, shared data
+        shared_data++;
+        sharedLineRemove(address);
+    } else if (state == 3) {                //If block in Modified, private data
         private_data++;
+        sharedLineRemove(address);
+    } else if (state == 6 or state == 5) {  //If block in Sc or Sm, shared data
+        shared_data++;
+        shared_line.emplace_back(address);
     }
     //Find corresponding cache block
     bool found = false;
@@ -546,6 +650,26 @@ int Cache::changeCacheBlockState(uint address, State state) {
     } else {
         return 0;
     }
+}
+
+void Cache::sharedLineRemove(uint address) {
+    for(auto iter = shared_line.begin(); iter != shared_line.end(); ++iter ) {
+        if( *iter == address ) {
+            shared_line.erase( iter );
+            break;
+        }
+    }
+}
+
+int Cache::sharedLineAssertion(uint address) {
+    int assertion = 0;
+    for(auto iter = shared_line.begin(); iter != shared_line.end(); ++iter ) {
+        if( *iter == address ) {
+            assertion = 1;
+            break;
+        }
+    }
+    return assertion;
 }
 
 void Cache::dump() {
